@@ -26,13 +26,17 @@ def get_wav_channel( fn, channel):
 
     return ch_data, typ, wav.getparams()
 
-def combinechannels(chdatas0,ofn,typ,params):
+def combinechannels(chdatas0, typ):
     maxdatalen = max(chdata.shape[0] for chdata in chdatas0)
     chdatas = [np.concatenate((chdata0, [0]*(maxdatalen-len(chdata0)))) for chdata0 in chdatas0]
     outputchannels = len(chdatas)
     output_data = np.zeros(outputchannels*chdatas[0].shape[0]).astype(typ)
     for ch,chdata in enumerate(chdatas):
         output_data[ch::outputchannels] = chdata
+    
+    return output_data, outputchannels
+    
+def save(output_data, params, outputchannels, ofn):
     outwav = wave.open(ofn,'w')
     outwav.setparams(params)
     outwav.setnchannels(outputchannels)
@@ -49,8 +53,15 @@ def combineMultFns(fns,chns,output_fn):
     output_data = []
     for ch_data in ch_datas:
         output_data += ch_data
-    combinechannels(output_data,output_fn,typ,params)
+    merged_output_data, outputchannels = combinechannels(output_data, typ)
+    save(merged_output_data, params, outputchannels, output_fn)
     
+def split_wav_by_time(wav_data):
+    return wav_data
+
+def split_wav_random(wav_data, n_samples=1, min_time=0.5):
+    return wav_data
+
 if __name__ == '__main__':
     datapath = '/home/hienvq/Desktop/AI/KaturaAI/data/JKspeech-v_1_0/JKspeech/'
     datafile = ['E01.wav', 'E02.wav', 'E03.wav']
