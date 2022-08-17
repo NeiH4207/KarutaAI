@@ -20,15 +20,15 @@ def get_wav_channel( fn, channel):
         raise ValueError("sample width {} not supported".format(depth))
     if channel >= nch:
         raise ValueError("cannot extract channel {} out of {}".format(channel+1, nch))
-#     print ("Extracting channel {} out of {} channels, {}-bit depth".format(channel+1, nch, depth*8))
+    print ("Extracting channel {} out of {} channels, {}-bit depth".format(channel+1, nch, depth*8))
     data = np.frombuffer(sdata, dtype=typ)
     ch_data = data[channel::nch]
 
     return ch_data, typ, wav.getparams()
 
 def combinechannels(chdatas0,ofn,typ,params):
-    mindatalen = min(chdata.shape[0] for chdata in chdatas0)
-    chdatas = [chdata0[:mindatalen] for chdata0 in chdatas0]
+    maxdatalen = max(chdata.shape[0] for chdata in chdatas0)
+    chdatas = [np.concatenate((chdata0, [0]*(maxdatalen-len(chdata0)))) for chdata0 in chdatas0]
     outputchannels = len(chdatas)
     output_data = np.zeros(outputchannels*chdatas[0].shape[0]).astype(typ)
     for ch,chdata in enumerate(chdatas):
@@ -53,8 +53,8 @@ def combineMultFns(fns,chns,output_fn):
     
 if __name__ == '__main__':
     datapath = '/home/hienvq/Desktop/AI/KaturaAI/data/JKspeech-v_1_0/JKspeech/'
-    datafile = ['E01.wav', 'E02.wav', 'E03.wav'][:2]
+    datafile = ['E01.wav', 'E02.wav', 'E03.wav']
     datafile = [os.path.join(datapath, _file) for _file in datafile]
-    chns = [[0], [0]]
+    chns = [[0], [0], [0]]
     output_fn = './output/out.wav'
     combineMultFns(datafile,chns,output_fn)
