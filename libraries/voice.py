@@ -20,7 +20,7 @@ def get_wav_channel( fn, channel):
         raise ValueError("sample width {} not supported".format(depth))
     if channel >= nch:
         raise ValueError("cannot extract channel {} out of {}".format(channel+1, nch))
-    print ("Extracting channel {} out of {} channels, {}-bit depth".format(channel+1, nch, depth*8))
+    # print ("Extracting channel {} out of {} channels, {}-bit depth".format(channel+1, nch, depth*8))
     data = np.frombuffer(sdata, dtype=typ)
     ch_data = data[channel::nch]
 
