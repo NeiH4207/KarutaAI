@@ -10,18 +10,15 @@ def parser_args():
                         default='/Users/mac/Desktop/AI/KaturaAI/data/JKspeech')
     parser.add_argument('--language', 
                         help='the language of the data', 
-                        default='jv')
+                        default='ej')
     parser.add_argument('--num_data',
                         help='the number of generated data',
                         default=10) 
-    parser.add_argument('--min_seconds',
-                        help='the minimum seconds of the data',
+    parser.add_argument('--min_time',
+                        help='the minimum time audio',
                         default=2)
-    parser.add_argument('--min_v',
-                        help='the minimum len of the data',
-                        default=2)
-    parser.add_argument('--max_v',
-                        help='the maximum len of the data',
+    parser.add_argument('--max_time',
+                        help='the maximum time audio',
                         default=10)
     parser.add_argument('--result_path',
                         help='the path of the result',
@@ -32,16 +29,22 @@ def main():
     args = parser_args()
     all_files = gather_file(args.datapath, ext='.wav')
     if args.language == 'en':
-        datafile = [os.path.join(args.datapath, _file) 
+        datafile =  [os.path.join(args.datapath, _file) 
                      for _file in all_files if _file.startswith('E')]
     elif args.language == 'jv':
-        datafile = [os.path.join(args.datapath, _file) 
+        datafile =  [os.path.join(args.datapath, _file) 
+                     for _file in all_files if _file.startswith('J')]
+    elif args.language == 'ej':
+        datafile =  [os.path.join(args.datapath, _file) 
+                     for _file in all_files if _file.startswith('E')] + \
+                    [os.path.join(args.datapath, _file) 
                      for _file in all_files if _file.startswith('J')]
         
     chns = [[0]] * len(datafile)
     wav_data = []
     channels = []
     all_samples = []
+    
     for idx, fn in enumerate(datafile):
         data, typ, params = get_wav_channel(fn, chns[idx][0])
         wav_data.append(data)
