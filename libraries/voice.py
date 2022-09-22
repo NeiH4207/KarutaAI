@@ -2,6 +2,7 @@ import wave
 import os
 import sys
 import numpy as np
+from pydub import AudioSegment
 
 def get_wav_channel( fn, channel):
     '''
@@ -26,62 +27,40 @@ def get_wav_channel( fn, channel):
 
     return ch_data, typ, wav.getparams()
 
-def combinechannels(chdatas0, typ):
-    maxdatalen = max(chdata.shape[0] for chdata in chdatas0)
-    chdatas = [np.concatenate((chdata0, [0]*(maxdatalen-len(chdata0)))) for chdata0 in chdatas0]
-    outputchannels = len(chdatas)
-    output_data = np.zeros(outputchannels*chdatas[0].shape[0]).astype(typ)
-    for ch,chdata in enumerate(chdatas):
-        output_data[ch::outputchannels] = chdata
-    
-    return output_data, outputchannels
-    
 def save(output_data, params, outputchannels, ofn):
     outwav = wave.open(ofn,'w')
     outwav.setparams(params)
     outwav.setnchannels(outputchannels)
-    outwav.writeframes(output_data.tobytes())
+    outwav.writeframes(output_data.astype('<i2').tobytes())
     outwav.close()
 
-def combineMultFns(fns,chns,output_fn, outchannels=None):
-    os.makedirs(os.path.dirname(output_fn), exist_ok=True)
-    ch_datas = [[]for _ in range(len(fns))]
-    for idx,fn in enumerate(fns):
-        for ch in chns[idx]:
-            data, typ, params = get_wav_channel(fn,ch)
-            ch_datas[idx].append(data)
-    output_data = []
-    for ch_data in ch_datas:
-        output_data += ch_data
-    merged_output_data, outputchannels = combinechannels(output_data, typ)
-    if outchannels is not None:
-        outputchannels = outchannels
-    save(merged_output_data, params, outputchannels, output_fn)
-
-def combine_waves(wav_data_list, typ, params, output_fn=None, outputchannels=None):
-    merged_output_data, out_channels = combinechannels(wav_data_list, typ)
-    if outputchannels is not None:
-        out_channels = outputchannels
+def combine_waves(frames, typ, params, output_fn=None, outputchannels=None):
     if output_fn is not None:
         os.makedirs(os.path.dirname(output_fn), exist_ok=True)
-        save(merged_output_data, params, out_channels, output_fn)
-    return merged_output_data, out_channels
+    output = wave.open(output_fn, 'wb')
+    output.setparams(params)
+    samples = [np.frombuffer(f, dtype='<i2') for f in frames]
+    samples = [samp.astype(np.float64) for samp in samples]
+    # mix as much as possible
+    min_len = min(map(len, samples))
+    mix = samples[0][:min_len]
+    for i in range(1, len(samples)):
+        mix += samples[i][:min_len]
+        
+    save(mix, params, 1, output_fn)
     
 def split_wav_by_time(wav_data, params, time_interval=1.0, num_samples=1):
     wav_len = wav_data.shape[0]
     seconds = wav_len / params.framerate
     sample_len = int(time_interval / seconds * wav_len)
-    random_start_idx = [np.random.randint(0,wav_len-sample_len) for _ in range(num_samples)]
+    random_start_idx = [np.random.randint(0,wav_len - sample_len) for _ in range(num_samples)]
     samples = [wav_data[start_idx:start_idx+sample_len] for start_idx in random_start_idx]
     return samples
 
-def split_wav_random(wav_data, n_samples=1, min_time=0.5):
-    return wav_data
-
 if __name__ == '__main__':
-    datapath = '/Users/mac/Desktop/AI/KaturaAI/data/JKspeech/'
+    datapath = '/home/hienvq/Desktop/AI/KarutaAI/data/'
     result_path = '/Users/mac/Desktop/AI/KaturaAI/result/'
-    datafile = ['E01.wav', 'E02.wav', 'E03.wav']
+    datafile = ['Q_12.wav']
     num_data = 10
     min_v = 2
     max_v = 10

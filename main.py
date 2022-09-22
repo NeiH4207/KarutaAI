@@ -14,16 +14,16 @@ def parser_args():
                         default='ej')
     parser.add_argument('--num_gen_data',
                         help='the number of generated data',
-                        default=10) 
+                        default=1000) 
     parser.add_argument('--num_merge_data',
                         help='the number of generated data',
-                        default=4) 
+                        default=20) 
     parser.add_argument('--min_time',
                         help='the minimum time audio',
                         default=2)
     parser.add_argument('--max_time',
                         help='the maximum time audio',
-                        default=10)
+                        default=5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
                         default='generated_data')
@@ -62,7 +62,6 @@ def main():
     all_labels = np.array(all_labels, dtype=str)
     all_samples = np.array(all_samples, dtype=object)
     # shuffle samples
-    np.random.shuffle(all_samples)
     gen_data_path = args.gen_data_path
     data_path = os.path.join(gen_data_path, 'data')
     label_path = os.path.join(gen_data_path, 'label')
