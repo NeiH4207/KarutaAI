@@ -30,15 +30,13 @@ def get_wav_channel( fn, channel):
 def save(output_data, params, outputchannels, ofn):
     outwav = wave.open(ofn,'w')
     outwav.setparams(params)
-    outwav.setnchannels(outputchannels)
+    outwav.setnchannels(1)
     outwav.writeframes(output_data.astype('<i2').tobytes())
     outwav.close()
 
 def combine_waves(frames, typ, params, output_fn=None, outputchannels=None):
     if output_fn is not None:
         os.makedirs(os.path.dirname(output_fn), exist_ok=True)
-    output = wave.open(output_fn, 'wb')
-    output.setparams(params)
     samples = [np.frombuffer(f, dtype='<i2') for f in frames]
     samples = [samp.astype(np.float64) for samp in samples]
     # mix as much as possible

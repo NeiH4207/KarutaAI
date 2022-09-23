@@ -226,9 +226,9 @@ class FeatureExtractorDataset(Dataset):
     @staticmethod
     def group_data_by_label(spec_sizes, labels):
         classes = np.unique(labels)
-        grouped_data = []
+        grouped_data = {}
         for c in classes:
-            grouped_data.append([])
+            grouped_data[c] = []
 
         for idx, spec_size in enumerate(spec_sizes):
             grouped_data[labels[idx]].append(spec_size)
@@ -253,9 +253,9 @@ class FeatureExtractorDataset(Dataset):
         axs[1].title.set_text('For each class')
         axs[1].set_xlabel('Spectrogram time dimension')
         axs[1].set_ylabel('Frequency')
-        for idx, group in enumerate(grouped_data):
-            label = 'Class {}'.format(idx)
+        for label, group in grouped_data.items():
+            label = 'Class {}'.format(label)
             axs[1].hist(group, alpha=0.5, bins='auto', label=label)
-        axs[1].legend()
+        # axs[1].legend()
         ct = datetime.datetime.now()
         plt.savefig(ct.strftime("%m_%d_%Y, %H:%M:%S") + ".png")

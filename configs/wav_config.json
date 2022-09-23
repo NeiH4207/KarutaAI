@@ -1,0 +1,8 @@
+{
+  "nchannels": 1,
+  "sampwidth": 2,
+  "framerate": 48000,
+  "type": "int64",
+  "comptype": "NONE",
+  "compname": "not compressed"
+}

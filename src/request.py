@@ -56,7 +56,11 @@ class Socket:
     def get_div_audio(self, id, part):
         url = END_POINT_API + '/question/{}/audio/divided-data?index={}'.format(id, part)
         response = requests.get(url, headers=self.headers, verify=False)
-        return response
+        sdata = response.content
+        typ = { 1: np.uint8, 2: np.uint16, 4: np.uint32 }.get(2)
+        print ("Extracting channel {} out of {} channels, {}-bit depth".format(0+1, 1, 2*8))
+        data = np.frombuffer(sdata, dtype=typ)
+        return data
     
     def get_audio_data(self, id=None):
         url = END_POINT_API + '/question/download/raw-challenge/resource'

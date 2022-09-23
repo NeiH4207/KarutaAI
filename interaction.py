@@ -1,5 +1,6 @@
 import json
 import os
+import numpy as np
 from src.request import Socket
 from src.karuta import Karuta
 import warnings
@@ -18,7 +19,7 @@ def parse_args():
     parser.add_argument("--sol-path", type=str, default="output/solutions")
     parser.add_argument("--output-path", type=str, default="./output/recovered_images/")
     parser.add_argument( "--token", type=str, 
-        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsIm5hbWUiOiLEkOG6oWkgaOG7jWMgQsOhY2gga2hvYSBIw6AgTuG7mWkiLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTY2MzgyOTAxNn0.ENFdEtxlGAVAxSAdpcer9LhJFrOqHZTOKwbzxeORSDA"
+        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsIm5hbWUiOiLEkOG6oWkgaOG7jWMgQsOhY2gga2hvYSBIw6AgTuG7mWkiLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTY2MzkxMTE0NX0.YT_wXy1Rx3YFKI57QXZvR7Mrd9lvKSmTlvm7padHd5M"
     )
     parser.add_argument("-s", "--tournament_name", type=str, default='Procon2022')
     parser.add_argument("-r", "--round_name", type=str, default='Round1')
@@ -30,7 +31,8 @@ def parse_args():
     return args
 
 
-def read(socket: Socket, tournament_name, round_name, match_name, question_name, get_img_info=False):
+def read(socket: Socket, tournament_name, round_name, 
+         match_name, question_name, part):
     tournaments = socket.get_tournament()
     tournament_id = None
     round_id = None
@@ -82,14 +84,11 @@ def read(socket: Socket, tournament_name, round_name, match_name, question_name,
         return None
     
     question_info = socket.get_question(question_id)
-    audio = socket.get_div_audio(question_id, 1)
+    audio = socket.get_div_audio(question_id, part)
+
     print('Read Match sucessful')
     
     game_info = Karuta()
-    game_info.name = match_name
-    if not get_img_info:
-        return game_info
-    game_info.mode = 'rgb'
     return game_info
 
 def main():
