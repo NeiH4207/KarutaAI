@@ -13,7 +13,7 @@ from configs import model_configs
 
 class NNet(nn.Module):
     def __init__(self):
-        self.name = 'ProNet'
+        self.name = 'NNet'
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if self.device == 'cuda':
             print('Using GPU')
@@ -33,7 +33,6 @@ class NNet(nn.Module):
         return output.cpu().data.numpy().flatten()
  
     def set_loss_function(self, loss):
-        return
         if loss == "mse":
             self.loss = nn.MSELoss()
         elif loss == "cross_entropy":
@@ -48,22 +47,27 @@ class NNet(nn.Module):
             self.loss = nn.SmoothL1Loss()
         elif loss == "soft_margin":
             self.loss = nn.SoftMarginLoss()
+        elif loss == "mlsm":
+            self.loss = nn.MultiLabelSoftMarginLoss()
         else:
             raise ValueError("Loss function not found")
         
     def set_optimizer(self, optimizer, lr):
+        self.lr = lr
         if optimizer == "sgd":
-            self.optimizer = optim.SGD(self.parameters(), lr=lr)
+            self.optimizer = optim.SGD(self.parameters(), lr=lr)		# Tối ưu theo gradient descent thuần túy
         elif optimizer == "adam":
             self.optimizer = optim.Adam(self.parameters(), lr=lr)
+        elif optimizer == "adamax":
+            self.optimizer = optim.Adamax(self.parameters(), lr=lr)
         elif optimizer == "adadelta":
-            self.optimizer = optim.Adadelta(self.parameters(), lr=lr)
+            self.optimizer = optim.Adadelta(self.parameters(), lr=lr)		# Phương pháp Adadelta có lr update
         elif optimizer == "adagrad":
-            self.optimizer = optim.Adagrad(self.parameters(), lr=lr)
+            self.optimizer = optim.Adagrad(self.parameters(), lr=lr)		# Phương pháp Adagrad chỉ cập nhật lr ko nhớ
         elif optimizer == "rmsprop":
             self.optimizer = optim.RMSprop(self.parameters(), lr=lr)
-        else:
-            self.optimizer = Adas(self.parameters(), lr=lr)
+        elif optimizer == "nadam":
+            self.optimizer = optim.NAdam(self.parameters(), lr=lr)
             
     def reset_grad(self):
         self.optimizer.zero_grad()

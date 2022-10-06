@@ -26,7 +26,7 @@ def parser_args():
                         default=5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/val')
+                        default='generated_data/test')
     return parser.parse_args()
 
 def main():
