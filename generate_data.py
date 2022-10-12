@@ -14,7 +14,7 @@ def parser_args():
                         default='ej')
     parser.add_argument('--num_gen_data',
                         help='the number of generated data',
-                        default=2500) 
+                        default=5000) 
     parser.add_argument('--num_merge_data',
                         help='the number of generated data',
                         default=20) 
@@ -26,7 +26,7 @@ def parser_args():
                         default=5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/test')
+                        default='generated_data/val')
     return parser.parse_args()
 
 def main():
@@ -55,7 +55,7 @@ def main():
         wav_data.append(data)
         channels.append(params.nchannels)
         
-        samples = split_wav_by_time(data, params, time_interval=3, num_samples=3)
+        samples = split_wav_by_time(data, params, time_interval=(random()*2.5+0.5), num_samples=3)
         all_samples.extend(samples)
         all_labels.extend([fn.split('/')[-1].split('.')[0]] * len(samples))
     

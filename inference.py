@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from src.data_helper import load_data, preprocess
-from models.lstm import LSTM
+from models.lstm import CLSTM, LSTM
 import torch
 from src.trainer import Trainer
 
@@ -61,6 +61,9 @@ def parse_args():
     parser.add_argument('--preprocess', action='store_true',
                         help='Show validation results')
     
+    parser.add_argument('--cpu', action='store_true',
+                        help='Use cpu cores instead')
+    
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Show validation results')
     
@@ -69,7 +72,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    if args.cpu:
+        device = 'cpu'
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
     data_config = {
         'num_mfcc': 13,
         'n_fft': 2048,
@@ -77,15 +83,17 @@ def main():
         'timeseries_length': 128
     }
     
-    model = LSTM(
+    model = CLSTM(
         input_size=33,
-        hidden_size=32,
+        hidden_size=256,
         num_layers=2,
         num_classes=88, 
         device=device
     )
-    audio_file_path = 'generated_data/test/data/ej_combined_sample_0.wav'
-    audio_label_path = 'generated_data/test/label/ej_combined_sample_0.txt'
+    audio_file_path = 'generated_data/train/data/ej_combined_sample_337.wav'
+    # audio_file_path = 'data/Q_12.wav'
+    audio_file_path = 'data/Q_12.wav'
+    audio_label_path = 'generated_data/train/label/ej_combined_sample_337.txt'
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
     trainer.load_model_from_path(args.model_file_path)

@@ -34,6 +34,12 @@ class Evaluator(object):
         """
         return metrics.accuracy_score(y_trues, y_preds)
 
+    def f1(self, y_preds, y_trues):
+        """
+        Calculates the accuracy
+        """
+        return metrics.f1_score(y_trues, y_preds)
+
     def roc_auc(self, y_preds, y_trues):
         """
         Calculates the area under the ROC curve for multi class classification

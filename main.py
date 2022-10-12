@@ -1,8 +1,8 @@
 import argparse
 import os
 import numpy as np
-from src.data_helper import load_data, preprocess
-from models.lstm import LSTM
+from src.data_helper import load_data, preprocess, preprocess2, preprocess3
+from models.lstm import CLSTM, CLSTM2, LSTM
 import torch
 from src.trainer import Trainer
 
@@ -25,6 +25,10 @@ def parse_args():
     parser.add_argument('--test-folder', type=str,
                         default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/test',
                         help='path to training data')
+    
+    parser.add_argument('--original-label-data-path', type=str,
+                        default='/home/hienvq/Desktop/AI/KarutaAI/data/JKspeech/',
+                        help='')
     
     parser.add_argument('--processed-data-path', type=str,
                         default='/home/hienvq/Desktop/AI/KarutaAI/tmp',
@@ -52,13 +56,13 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.0001,  
                         help='learning rate')
     
-    parser.add_argument('-b', '--batch-size', type=int, default=128,
+    parser.add_argument('-b', '--batch-size', type=int, default=32,
                         help='batch size')
     
     parser.add_argument('--seed', type=int, default=233,
                         help='seed for training')
     
-    parser.add_argument('--preprocess', action='store_true',
+    parser.add_argument('--preprocess', action='store_true', # default=True,
                         help='Show validation results')
     
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -75,15 +79,29 @@ def main():
         'num_mfcc': 13,
         'n_fft': 2048,
         'hop_length': 512,
-        'timeseries_length': 128
+        'timeseries_length': 216,
+        'sr': 22050
     }
     
     
     if args.preprocess:
-        preprocess(args.train_folder, os.path.join(args.processed_data_path, 'train'), data_config)
-        preprocess(args.val_folder, os.path.join(args.processed_data_path, 'val'), data_config)
-        preprocess(args.test_folder, os.path.join(args.processed_data_path, 'test'), data_config)
+        # preprocess2(args.train_folder, os.path.join(args.processed_data_path, 'train2'), data_config)
+        # preprocess2(args.val_folder, os.path.join(args.processed_data_path, 'val2'), data_config)
+        # preprocess2(args.test_folder, os.path.join(args.processed_data_path, 'test2'), data_config)
     
+        preprocess(args.train_folder,
+                    os.path.join(args.processed_data_path, 'train'), data_config)
+        preprocess(args.val_folder,
+                    os.path.join(args.processed_data_path, 'val'), data_config)
+        preprocess(args.test_folder,
+                    os.path.join(args.processed_data_path, 'test'), data_config)
+        # preprocess(args.train_folder, args.original_label_data_path,
+        #             os.path.join(args.processed_data_path, 'train'), data_config)
+        # preprocess(args.val_folder, args.original_label_data_path,
+        #             os.path.join(args.processed_data_path, 'val'), data_config)
+        # preprocess(args.test_folder, args.original_label_data_path,
+        #             os.path.join(args.processed_data_path, 'test'), data_config)
+    return
     x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
     x_val, y_val = load_data(os.path.join(args.processed_data_path, 'val'))
     # x_test, y_test = load_data(os.path.join(args.processed_data_path, 'test'))
@@ -93,13 +111,21 @@ def main():
     # print("Number of testing examples: %d" % x_test.shape[0])
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = LSTM(
+    # model = CLSTM2(
+    #     input_size=x_train[0].shape[2],
+    #     hidden_size=512,
+    #     num_layers=2,
+    #     num_classes=1, 
+    #     device=device
+    # )
+    model = CLSTM(
         input_size=x_train[0].shape[1],
-        hidden_size=32,
+        hidden_size=512,
         num_layers=2,
         num_classes=88, 
         device=device
     )
+    # swave_model = ResNetish(88, [2, 2, 2])
     
     training_params = {
         'loss_function': args.loss,
@@ -110,6 +136,7 @@ def main():
                     
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
+    # trainer.load_model_from_path(os.path.join(args.model_save_dir, "model.pt"))
     trainer.set_data(x_train, y_train, x_val, y_val)
     trainer.train(optimizer=args.optimizer, training_params=training_params, )
     

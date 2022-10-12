@@ -101,11 +101,11 @@ def main():
     args = parse_args()
     socket = Socket(args.token)
     if args.mode == 'r':
-        game_info = read(socket, tournament_name, round_name, match_name, question_name, get_img_info=True)
+        game_info = read(socket, tournament_name, round_name, match_name, question_name, 1)
     else:
         game_info = read(socket, tournament_name, round_name, match_name, question_name)
     if args.mode == 'r':
-        game_info = read(socket, tournament_name, round_name, match_name, question_name, get_img_info=True)
+        game_info = read(socket, tournament_name, round_name, match_name, question_name)
         game_info.save_to_json()
     elif args.mode == 'w':
         file_path = os.path.join(args.sol_path, args.match_name + '.txt')
