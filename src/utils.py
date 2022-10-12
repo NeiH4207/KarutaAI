@@ -22,6 +22,9 @@ def tuple_type(strings):
     mapped_int = map(int, strings.split(","))
     return tuple(mapped_int)
 
+def get_filename(filepath):
+    return os.path.basename(filepath).split(".")[0]
+
 def gather_files_from_folder(_dir, _extension):
     """
     :param _dir: Directory where file of interest are stored.

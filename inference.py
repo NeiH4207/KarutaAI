@@ -33,7 +33,7 @@ def parse_args():
     parser.add_argument('--accept-threshold', type=float, default=0.01,
                         help='threshold to accept a 2nd predicted label')
     
-    parser.add_argument('--model-path', type=str, default='./trainned_models"')
+    parser.add_argument('--model-file-path', type=str, default='./trainned_models/model.pt')
     
     parser.add_argument('-d', '--model-save-dir', type=str, 
                         default='trainned_models/',
@@ -69,8 +69,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
-    
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     data_config = {
         'num_mfcc': 13,
         'n_fft': 2048,
@@ -78,40 +77,19 @@ def main():
         'timeseries_length': 128
     }
     
-    
-    if args.preprocess:
-        preprocess(args.train_folder, os.path.join(args.processed_data_path, 'train'), data_config)
-        preprocess(args.val_folder, os.path.join(args.processed_data_path, 'val'), data_config)
-        preprocess(args.test_folder, os.path.join(args.processed_data_path, 'test'), data_config)
-    
-    x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
-    x_val, y_val = load_data(os.path.join(args.processed_data_path, 'val'))
-    # x_test, y_test = load_data(os.path.join(args.processed_data_path, 'test'))
-    
-    print("Number of training examples: %d" % x_train.shape[0])
-    print("Number of validation examples: %d" % x_val.shape[0])
-    # print("Number of testing examples: %d" % x_test.shape[0])
-    
-    device = "cuda" if torch.cuda.is_available() else "cpu"
     model = LSTM(
-        input_size=x_train[0].shape[1],
+        input_size=33,
         hidden_size=32,
         num_layers=2,
         num_classes=88, 
         device=device
     )
-    
-    training_params = {
-        'loss_function': args.loss,
-        'learning_rate': args.lr,
-        'batch_size': args.batch_size,
-        'epochs': args.epochs
-    }
-                    
+    audio_file_path = 'generated_data/test/data/ej_combined_sample_0.wav'
+    audio_label_path = 'generated_data/test/label/ej_combined_sample_0.txt'
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
-    trainer.set_data(x_train, y_train, x_val, y_val)
-    trainer.train(optimizer=args.optimizer, training_params=training_params, )
+    trainer.load_model_from_path(args.model_file_path)
+    trainer.test(audio_file_path, audio_label_path, data_config)
     
 if __name__ == "__main__":
     main()
