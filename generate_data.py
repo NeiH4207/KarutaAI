@@ -12,18 +12,18 @@ def parser_args():
     parser.add_argument('--language', 
                         help='the language of the data', 
                         default='ej')
-    parser.add_argument('--num_gen_data',
+    parser.add_argument('--num-gen-data', type=int,
                         help='the number of generated data',
-                        default=100000) 
-    parser.add_argument('--num_merge_data',
-                        help='the number of generated data',
+                        default=10000) 
+    parser.add_argument('--num_merge_data', type=int,
+                        help='the max number of mixed readers',
                         default=5) 
     parser.add_argument('--min_time',
-                        help='the minimum time audio',
-                        default=2)
+                        help='the minimum time audio', type=float,
+                        default=0.5)
     parser.add_argument('--max_time',
-                        help='the maximum time audio',
-                        default=5)
+                        help='the maximum time audio', type=float,
+                        default=2.5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
                         default='generated_data/val')
@@ -54,9 +54,8 @@ def main():
         data, typ, params = get_wav_channel(fn, chns[idx][0])
         wav_data.append(data)
         channels.append(params.nchannels)
-        
-        # samples = split_wav_by_time(data, params, time_interval=(random()*2.5+0.5), num_samples=3)
-        samples = split_wav_by_time(data, params, time_interval=2.5, num_samples=30)
+        time_interval = random()*(args.max_time - args.min_time) / args.min_time + args.min_time
+        samples = split_wav_by_time(data, params, time_interval=time_interval, num_samples=30)
         all_samples.extend(samples)
         all_labels.extend([fn.split('/')[-1].split('.')[0]] * len(samples))
     
@@ -74,7 +73,7 @@ def main():
         os.makedirs(label_path)
     
     for idx in tqdm(range(args.num_gen_data)):
-        num_merge_data = np.random.randint(1, max(2, args.num_merge_data))
+        num_merge_data = 1 + np.random.randint(1, max(2, args.num_merge_data))
         ids = np.random.randint(0, len(all_samples), size=num_merge_data)
         samples = all_samples[ids]
         labels = all_labels[ids]

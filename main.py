@@ -1,41 +1,32 @@
 import argparse
 import os
 import numpy as np
-from src.data_helper import load_data, preprocess, preprocess2, preprocess3
-from models.lstm import CLSTM, CLSTM2, LSTM
+from src.data_helper import load_data, preprocess
+from models.lstm import CLSTM
 import torch
 from src.trainer import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--load_dataset', action='store_true',  default=True,
-                        help='load_dataset model, preprocess data')
-    
-    parser.add_argument('--training', action='store_true',  default=True,
-                        help='training model')
-    # Dataset directory
     parser.add_argument('--train-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/train',
+                        default='generated_data/train',
                         help='path to training data')
     
     parser.add_argument('--val-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/val',
+                        default='generated_data/val',
                         
                         help='path to training data')
     parser.add_argument('--test-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/test',
+                        default='generated_data/test',
                         help='path to training data')
     
     parser.add_argument('--original-label-data-path', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/data/JKspeech/',
+                        default='data/JKspeech/',
                         help='')
     
     parser.add_argument('--processed-data-path', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/tmp',
+                        default='tmp',
                         help='')
-    
-    parser.add_argument('--accept-threshold', type=float, default=0.01,
-                        help='threshold to accept a 2nd predicted label')
     
     parser.add_argument('--model-path', type=str, default='./trainned_models"')
     
