@@ -3,6 +3,8 @@ output/
 tmp/
 result/
 generated_data/*
+trainned_models/
+trained_models/
 *workspace*
 # Byte-compiled / optimized / DLL files
 __pycache__/
