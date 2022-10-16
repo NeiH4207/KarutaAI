@@ -37,6 +37,12 @@
     └── request.py
 ```
 
+### Installation
+
+```
+pip install -e .
+```
+
 ### How to generate data
 
 ```
