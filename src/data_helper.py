@@ -158,15 +158,52 @@ def preprocess3(datasetpath, original_label_file_path, dumppath, data_config):
         with open(dumppath, 'wb') as fp:
             pickle.dump(dataset, fp)
 
+def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
+    y = librosa.util.fix_length(audio, size=required_audio_size  * sr)
+    mfcc = librosa.feature.mfcc(
+        y=y, sr=sr, n_fft = data_config['n_fft'],
+        hop_length=data_config['hop_length'], n_mfcc=data_config['num_mfcc']
+    )
+
+    spectral_center = librosa.feature.spectral_centroid(
+        y=y, sr=sr, hop_length=data_config['hop_length']
+    )
+
+    chroma = librosa.feature.chroma_stft(y=y, sr=sr, 
+                                            n_chroma=data_config['num_chroma'],
+                                            hop_length=data_config['hop_length'])
+
+    spectral_contrast = librosa.feature.spectral_contrast(
+        y=y, sr=sr, hop_length=data_config['hop_length']
+    )
+    data = np.zeros(
+        (data_config['timeseries_length'],
+         8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
+    )
+    
+    data[:, 0:data_config['num_mfcc']] = \
+        mfcc.T[0:data_config['timeseries_length'], :]
+        
+    data[:, data_config['num_mfcc']:data_config['num_mfcc']+1] = \
+        spectral_center.T[0:data_config['timeseries_length'], :]
+        
+    data[:, data_config['num_mfcc'] + 1:data_config['num_mfcc']+data_config['num_chroma']+1] = \
+        chroma.T[0:data_config['timeseries_length']+data_config['num_chroma']+1, :]
+        
+    data[:, data_config['num_mfcc']+data_config['num_chroma']+1:] = \
+        spectral_contrast.T[0:data_config['timeseries_length'], :]
+    return data
+
 def preprocess(datasetpath, dumppath, data_config):
-    datapath = os.path.join(datasetpath, 'data')
+    # datapath = os.path.join(datasetpath, 'data')
     labelpath = os.path.join(datasetpath, 'label')
     required_audio_size = 5
     data_filenames = sorted(gather_files_from_folder(datasetpath, '.wav'))
     label_filenames = sorted(gather_files_from_folder(datasetpath, '.txt'))
     
     data = np.zeros(
-        (len(data_filenames), data_config['timeseries_length'], 20 + data_config['num_mfcc']), dtype=np.float64
+        (len(data_filenames), data_config['timeseries_length'],
+         8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
     )
     target = []
     
@@ -181,34 +218,7 @@ def preprocess(datasetpath, dumppath, data_config):
         target.append(label)
         #Going through each data_filename within a label
         audio, sr = librosa.load(data_filename)
-        y = librosa.util.fix_length(audio, size=5*sr)
-        mfcc = librosa.feature.mfcc(
-            y=y, sr=sr, n_fft = data_config['n_fft'],
-            hop_length=data_config['hop_length'], n_mfcc=data_config['num_mfcc']
-        )
-        
-        spectral_center = librosa.feature.spectral_centroid(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-        
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr, hop_length=data_config['hop_length'])
-        
-        spectral_contrast = librosa.feature.spectral_contrast(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-
-        data[i, :, 0:data_config['num_mfcc']] = \
-            mfcc.T[0:data_config['timeseries_length'], :]
-            
-        data[i, :, data_config['num_mfcc']:data_config['num_mfcc']+1] = \
-            spectral_center.T[0:data_config['timeseries_length'], :]
-            
-        data[i, :, data_config['num_mfcc'] + 1:data_config['num_mfcc']+13] = \
-            chroma.T[0:data_config['timeseries_length']+13, :]
-            
-        data[i, :, data_config['num_mfcc']+13:data_config['num_mfcc']+20] = \
-            spectral_contrast.T[0:data_config['timeseries_length'], :]
-    
+        data[i, :] = audio_to_tensor(audio, sr, data_config)[:]
     dataset = {
         'data': data,
         'target': target

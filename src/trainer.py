@@ -95,25 +95,9 @@ class Trainer:
             target = onehot_encode(f.read().split('\t')).astype(np.bool)
             f.close()
         #Going through each data_filename within a label
-        y, sr = librosa.load(audio_file_path)
-        mfcc = librosa.feature.mfcc(
-            y=y, sr=sr, n_fft = data_config['n_fft'], 
-            hop_length=data_config['hop_length'], 
-            n_mfcc=data_config['num_mfcc']
-        )
-        spectral_center = librosa.feature.spectral_centroid(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr, hop_length=data_config['hop_length'])
-        spectral_contrast = librosa.feature.spectral_contrast(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-        data = np.zeros((data_config['timeseries_length'], 33), dtype=np.float64)
-
-        data[:, 0:13] = mfcc.T[0:data_config['timeseries_length']]
-        data[:, 13:14] = spectral_center.T[0:data_config['timeseries_length']]
-        data[:, 14:26] = chroma.T[0:data_config['timeseries_length']]
-        data[:, 26:33] = spectral_contrast.T[0:data_config['timeseries_length']]
+        audio, sr = librosa.load(audio_file_path)
+        data = audio_to_tensor(audio, sr, data_config)
+    
         
         inp = Variable(torch.FloatTensor([data]).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
@@ -123,7 +107,10 @@ class Trainer:
                  data=df, errwidth=0)
         plt.xticks(color = 'w')
         plt.show()
-        print(labels[np.argsort(prob_out)[:sum(target)]])
+        print(prob_out[np.argsort(prob_out)[::-1]])
+        print(labels[np.argsort(prob_out)[::-1][:sum(target)]])
+        print(labels[np.argsort(prob_out)][::-1])
+        print(np.argsort(prob_out)[::-1])
         
     def train(self, optimizer='adam', training_params=None):
         # utility for running the training process
