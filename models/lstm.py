@@ -6,32 +6,6 @@ import torch.optim as optim
 
 from models.nnet import NNet
 
-class LSTM(NNet):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, device):
-        super(NNet, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.num_classes = num_classes
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional= True, batch_first=True)
-        self.fc1 = nn.Linear(hidden_size * 3, 128)
-        self.fc2 = nn.Linear(128, num_classes)
-        self.device = device
-
-    def forward(self, x):
-        # Set initial hidden and cell states
-        batch_size = x.size(0)
-        h0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(self.device) 
-        c0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(self.device) 
-
-        # Forward propagate LSTM
-        out, (h, c) = self.lstm(x, (h0, c0))  # shape = (batch_size, seq_length, hidden_size)
-        out = torch.cat([out[:, -1, :], h[0]], dim=1)
-        # Decode the hidden state of the last time step
-        out = self.fc1(out)
-        out = self.fc2(out)
-        return torch.sigmoid(out)
-
-
 class Encoder(nn.Module):
     def __init__(self, input_size, embbed_size, device='cuda'):
         super(Encoder, self).__init__()
@@ -87,7 +61,7 @@ class CLSTM(NNet):
 
         # Forward propagate LSTM
         out1, (h1, c1) = self.lstm1(x, (h0, c0))  # shape = (batch_size, seq_length, hidden_size)
-        out2, (h2, c2) = self.lstm1(x, (h0, c0))  # shape = (batch_size, seq_length, hidden_size)
+        out2, (h2, c2) = self.lstm2(x, (h1, c1))  # shape = (batch_size, seq_length, hidden_size)
         out1 = torch.cat([out1[:, -1, :], h1[0], h1[-1]], dim=1)
         out2 = torch.cat([out2[:, -1, :], h2[0], h2[-1]], dim=1)
         # Decode the hidden state of the last time step
@@ -95,38 +69,3 @@ class CLSTM(NNet):
         out2 = F.dropout(F.elu(self.fc2(out2)), p=0.3, training=self.training)
         out = torch.cat([self.fc3(out1), self.fc4(out2)], dim=1)
         return torch.sigmoid(out)
-    
-class CLSTM2(NNet):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, device):
-        super(NNet, self).__init__()
-        self.input_size = input_size
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.num_classes = num_classes
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional= True, batch_first=True)
-        self.encoder = Encoder(input_size, self.hidden_size, device)
-        self.fc1 = nn.Linear(hidden_size * 6, 512)
-        self.bn1    = nn.BatchNorm1d(512).to(device)
-        self.fc2 = nn.Linear(512, num_classes)
-        self.device = device
-
-    def forward(self, x):
-        # Set initial hidden and cell states
-        # embbed = self.encoder(x)
-        batch_size = x.size(0)
-        h0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(self.device) 
-        c0 = torch.zeros(self.num_layers * 2, batch_size, self.hidden_size).to(self.device) 
-
-        x1, x2 = x.permute(1, 0, 2, 3)
-        
-        # Forward propagate LSTM
-        out1, (h1, c1) = self.lstm(x1, (h0, c0))  #
-        out2, (h2, c2) = self.lstm(x2, (h0, c0))  # shape = (batch_size, seq_length, hidden_size)
-        out = torch.cat([out1[:, -1, :], out2[:, -1, :], h1[0], h2[0]], dim=1)
-        # Decode the hidden state of the last time step
-        out = F.dropout(self.fc1(out), p=0.3, training=self.training)
-        out = self.fc2(out)
-        return torch.sigmoid(out)
-    
-    
-    

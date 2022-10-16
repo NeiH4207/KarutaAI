@@ -77,23 +77,25 @@ def main():
     else:
         device = "cuda" if torch.cuda.is_available() else "cpu"
     data_config = {
-        'num_mfcc': 13,
+        'num_mfcc': 64,
+        'num_chroma': 64,
         'n_fft': 2048,
         'hop_length': 512,
-        'timeseries_length': 128
+        'timeseries_length': 216
     }
     
     model = CLSTM(
-        input_size=33,
-        hidden_size=256,
+        input_size=136,
+        hidden_size=512,
         num_layers=2,
         num_classes=88, 
         device=device
     )
-    audio_file_path = 'generated_data/train/data/ej_combined_sample_337.wav'
+    audio_file_path = 'generated_data/test/data/ej_combined_sample_15.wav'
+    audio_file_path = 'data/Q03.wav'
     # audio_file_path = 'data/Q_12.wav'
-    audio_file_path = 'data/Q_12.wav'
-    audio_label_path = 'generated_data/train/label/ej_combined_sample_337.txt'
+    audio_label_path = 'generated_data/test/label/ej_combined_sample_15.txt'
+    audio_label_path = 'data/Q03.txt'
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
     trainer.load_model_from_path(args.model_file_path)

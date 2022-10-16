@@ -76,7 +76,8 @@ def main():
     
     
     data_config = {
-        'num_mfcc': 13,
+        'num_mfcc': 64,
+        'num_chroma': 64,
         'n_fft': 2048,
         'hop_length': 512,
         'timeseries_length': 216,
@@ -89,21 +90,18 @@ def main():
         # preprocess2(args.val_folder, os.path.join(args.processed_data_path, 'val2'), data_config)
         # preprocess2(args.test_folder, os.path.join(args.processed_data_path, 'test2'), data_config)
     
-        preprocess(args.train_folder,
-                    os.path.join(args.processed_data_path, 'train'), data_config)
-        preprocess(args.val_folder,
-                    os.path.join(args.processed_data_path, 'val'), data_config)
-        preprocess(args.test_folder,
-                    os.path.join(args.processed_data_path, 'test'), data_config)
-        # preprocess(args.train_folder, args.original_label_data_path,
+        # preprocess(args.train_folder,
         #             os.path.join(args.processed_data_path, 'train'), data_config)
-        # preprocess(args.val_folder, args.original_label_data_path,
+        preprocess(args.train_folder, 
+                    os.path.join(args.processed_data_path, 'train'), data_config)
+        # preprocess(args.val_folder, 
         #             os.path.join(args.processed_data_path, 'val'), data_config)
-        # preprocess(args.test_folder, args.original_label_data_path,
+        # preprocess(args.test_folder, 
         #             os.path.join(args.processed_data_path, 'test'), data_config)
-    return
+        
+        
     x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
-    x_val, y_val = load_data(os.path.join(args.processed_data_path, 'val'))
+    x_val, y_val = load_data(os.path.join(args.processed_data_path, 'test'))
     # x_test, y_test = load_data(os.path.join(args.processed_data_path, 'test'))
     
     print("Number of training examples: %d" % x_train.shape[0])
