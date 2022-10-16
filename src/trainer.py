@@ -10,6 +10,7 @@ import seaborn as sns
 from src.data_helper import *
 import pandas as pd
 from src.evaluator import Evaluator
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from src.utils import *
 
 class Trainer:
@@ -89,38 +90,27 @@ class Trainer:
     
     def test(self, audio_file_path, label_file_path, data_config):
         self.model.to(self.device)
+        self.model.eval()
         with open(label_file_path, 'r') as f:
             target = onehot_encode(f.read().split('\t')).astype(np.bool)
             f.close()
         #Going through each data_filename within a label
-        y, sr = librosa.load(audio_file_path)
-        mfcc = librosa.feature.mfcc(
-            y=y, sr=sr, n_fft = data_config['n_fft'], 
-            hop_length=data_config['hop_length'], 
-            n_mfcc=data_config['num_mfcc']
-        )
-        spectral_center = librosa.feature.spectral_centroid(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-        chroma = librosa.feature.chroma_stft(y=y, sr=sr, hop_length=data_config['hop_length'])
-        spectral_contrast = librosa.feature.spectral_contrast(
-            y=y, sr=sr, hop_length=data_config['hop_length']
-        )
-        data = np.zeros((data_config['timeseries_length'], 33), dtype=np.float64)
-
-        data[:, 0:13] = mfcc.T[0:data_config['timeseries_length']]
-        data[:, 13:14] = spectral_center.T[0:data_config['timeseries_length']]
-        data[:, 14:26] = chroma.T[0:data_config['timeseries_length']]
-        data[:, 26:33] = spectral_contrast.T[0:data_config['timeseries_length']]
+        audio, sr = librosa.load(audio_file_path)
+        data = audio_to_tensor(audio, sr, data_config)
+    
         
         inp = Variable(torch.FloatTensor([data]).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
-        labels = ['E' + str(i + 1) for i in range(44)] + ['J' + str(i + 1) for i in range(44)] 
+        labels = np.array(['E' + str(i + 1) for i in range(44)] + ['J' + str(i + 1) for i in range(44)] )
         df = pd.DataFrame({'probability':prob_out,'target': target, 'labels': labels})
         ax = sns.barplot(x='labels', y='probability', hue='target',
                  data=df, errwidth=0)
         plt.xticks(color = 'w')
         plt.show()
+        print(prob_out[np.argsort(prob_out)[::-1]])
+        print(labels[np.argsort(prob_out)[::-1][:sum(target)]])
+        print(labels[np.argsort(prob_out)][::-1])
+        print(np.argsort(prob_out)[::-1])
         
     def train(self, optimizer='adam', training_params=None):
         # utility for running the training process
@@ -134,15 +124,17 @@ class Trainer:
         print_every = 5
         clip = 5
         valid_loss_min = np.Inf
-        valid_lacc_max = - np.Inf
+        valid_acc_max = - np.Inf
         
         self.model.train()
+        # scheduler = ReduceLROnPlateau(self.model.optimizer, factor=0.5, patience=0, verbose=True)
         train_loader = self.split_batch(self.train_x, self.train_y, batch_size=batch_size, shuffle=True)
         val_loader = self.split_batch(self.val_x, self.val_y, batch_size=batch_size, shuffle=False)
         
         for i in range(epochs):
             t = tqdm(train_loader)
             tot_loss = 0
+            counter = 0
             for inputs, labels in t:
                 counter += 1
                 inputs = Variable(torch.FloatTensor(inputs), requires_grad=True)
@@ -157,12 +149,12 @@ class Trainer:
                 self.model.step()
                 tot_loss += loss.item()
                 if counter % print_every == 0:
-                    t.set_postfix(loss=tot_loss)
+                    t.set_postfix(loss=tot_loss / counter)
                     
             val_loss, val_acc = self.eval(val_loader)
             
             if self.verbose:
-                print('Epoch: {}/{}'.format(i, epochs))
+                print('Epoch: {}/{}'.format(i + 1, epochs))
                 print('Val accuracy:', val_acc)
                 print('Val loss:', val_loss)
             if val_loss <= valid_loss_min:
@@ -170,16 +162,19 @@ class Trainer:
                     format(valid_loss_min, val_loss))
                 torch.save(self.model.state_dict(), self.model_path)
                 valid_loss_min = val_loss
-            elif val_acc > valid_lacc_max:
-                valid_lacc_max = val_acc
+            elif val_acc > valid_acc_max:
+                valid_acc_max = val_acc
                 torch.save(self.model.state_dict(), self.model_path)
-                
+            # scheduler.step(val_loss)
                     
         return (self.model)
 
             
-    def load_model_from_path(self, path):
-        self.model.load_state_dict(T.load(path))
+    def load_model_from_path(self, path, device=None):
+        if device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model.load_state_dict(T.load(path, map_location=device))
+        print("Model loaded sucessful!")
     
     def save_train_losses(self):
         plt.plot(self.train_losses)
