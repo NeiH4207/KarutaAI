@@ -1,41 +1,32 @@
 import argparse
 import os
 import numpy as np
-from src.data_helper import load_data, preprocess, preprocess2, preprocess3
-from models.lstm import CLSTM, CLSTM2, LSTM
+from src.data_helper import load_data, preprocess
+from models.lstm import CLSTM
 import torch
 from src.trainer import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--load_dataset', action='store_true',  default=True,
-                        help='load_dataset model, preprocess data')
-    
-    parser.add_argument('--training', action='store_true',  default=True,
-                        help='training model')
-    # Dataset directory
     parser.add_argument('--train-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/train',
+                        default='generated_data/train',
                         help='path to training data')
     
     parser.add_argument('--val-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/val',
+                        default='generated_data/val',
                         
                         help='path to training data')
     parser.add_argument('--test-folder', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/generated_data/test',
+                        default='generated_data/test',
                         help='path to training data')
     
     parser.add_argument('--original-label-data-path', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/data/JKspeech/',
+                        default='data/JKspeech/',
                         help='')
     
     parser.add_argument('--processed-data-path', type=str,
-                        default='/home/hienvq/Desktop/AI/KarutaAI/tmp',
+                        default='tmp',
                         help='')
-    
-    parser.add_argument('--accept-threshold', type=float, default=0.01,
-                        help='threshold to accept a 2nd predicted label')
     
     parser.add_argument('--model-path', type=str, default='./trainned_models"')
     
@@ -62,6 +53,9 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=233,
                         help='seed for training')
     
+    parser.add_argument('--load-model', action='store_true',
+                        help='Retrainging with old model')
+    
     parser.add_argument('--preprocess', action='store_true', # default=True,
                         help='Show validation results')
     
@@ -84,38 +78,22 @@ def main():
         'sr': 22050
     }
     
-    
     if args.preprocess:
-        # preprocess2(args.train_folder, os.path.join(args.processed_data_path, 'train2'), data_config)
-        # preprocess2(args.val_folder, os.path.join(args.processed_data_path, 'val2'), data_config)
-        # preprocess2(args.test_folder, os.path.join(args.processed_data_path, 'test2'), data_config)
-    
-        # preprocess(args.train_folder,
-        #             os.path.join(args.processed_data_path, 'train'), data_config)
         preprocess(args.train_folder, 
                     os.path.join(args.processed_data_path, 'train'), data_config)
-        # preprocess(args.val_folder, 
-        #             os.path.join(args.processed_data_path, 'val'), data_config)
-        # preprocess(args.test_folder, 
-        #             os.path.join(args.processed_data_path, 'test'), data_config)
+        preprocess(args.val_folder, 
+                    os.path.join(args.processed_data_path, 'val'), data_config)
+        preprocess(args.test_folder, 
+                    os.path.join(args.processed_data_path, 'test'), data_config)
         
         
     x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
     x_val, y_val = load_data(os.path.join(args.processed_data_path, 'test'))
-    # x_test, y_test = load_data(os.path.join(args.processed_data_path, 'test'))
     
     print("Number of training examples: %d" % x_train.shape[0])
-    print("Number of validation examples: %d" % x_val.shape[0])
-    # print("Number of testing examples: %d" % x_test.shape[0])
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    # model = CLSTM2(
-    #     input_size=x_train[0].shape[2],
-    #     hidden_size=512,
-    #     num_layers=2,
-    #     num_classes=1, 
-    #     device=device
-    # )
+    
     model = CLSTM(
         input_size=x_train[0].shape[1],
         hidden_size=512,
@@ -123,7 +101,6 @@ def main():
         num_classes=88, 
         device=device
     )
-    # swave_model = ResNetish(88, [2, 2, 2])
     
     training_params = {
         'loss_function': args.loss,
@@ -134,7 +111,9 @@ def main():
                     
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
-    # trainer.load_model_from_path(os.path.join(args.model_save_dir, "model.pt"))
+    if args.load_model:
+        trainer.load_model_from_path(os.path.join(args.model_save_dir, "model.pt"))
+        
     trainer.set_data(x_train, y_train, x_val, y_val)
     trainer.train(optimizer=args.optimizer, training_params=training_params, )
     

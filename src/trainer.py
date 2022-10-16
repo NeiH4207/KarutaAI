@@ -88,12 +88,9 @@ class Trainer:
         
         return np.mean(val_losses), np.mean(val_accuracies)
     
-    def test(self, audio_file_path, label_file_path, data_config):
+    def test(self, audio_file_path=None, label_file_path=None, data_config=None, k=1):
         self.model.to(self.device)
         self.model.eval()
-        with open(label_file_path, 'r') as f:
-            target = onehot_encode(f.read().split('\t')).astype(np.bool)
-            f.close()
         #Going through each data_filename within a label
         audio, sr = librosa.load(audio_file_path)
         data = audio_to_tensor(audio, sr, data_config)
@@ -102,15 +99,12 @@ class Trainer:
         inp = Variable(torch.FloatTensor([data]).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
         labels = np.array(['E' + str(i + 1) for i in range(44)] + ['J' + str(i + 1) for i in range(44)] )
-        df = pd.DataFrame({'probability':prob_out,'target': target, 'labels': labels})
-        ax = sns.barplot(x='labels', y='probability', hue='target',
+        df = pd.DataFrame({'probability':prob_out, 'labels': labels})
+        ax = sns.barplot(x='labels', y='probability',
                  data=df, errwidth=0)
         plt.xticks(color = 'w')
         plt.show()
-        print(prob_out[np.argsort(prob_out)[::-1]])
-        print(labels[np.argsort(prob_out)[::-1][:sum(target)]])
-        print(labels[np.argsort(prob_out)][::-1])
-        print(np.argsort(prob_out)[::-1])
+        print(labels[np.argsort(prob_out)[::-1]][:k])
         
     def train(self, optimizer='adam', training_params=None):
         # utility for running the training process
