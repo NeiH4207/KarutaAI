@@ -88,7 +88,7 @@ class Trainer:
         
         return np.mean(val_losses), np.mean(val_accuracies)
     
-    def test(self, audio_file_path, label_file_path, data_config):
+    def test(self, audio_file_path=None, label_file_path=None, data_config=None):
         self.model.to(self.device)
         self.model.eval()
         with open(label_file_path, 'r') as f:
