@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from src.data_helper import load_data, preprocess
-from models.lstm import CLSTM, LSTM
+from models.lstm import CLSTM
 import torch
 from src.trainer import Trainer
 
@@ -91,11 +91,11 @@ def main():
         num_classes=88, 
         device=device
     )
-    audio_file_path = 'generated_data/test/data/ej_combined_sample_15.wav'
-    audio_file_path = 'data/Q03.wav'
-    # audio_file_path = 'data/Q_12.wav'
-    audio_label_path = 'generated_data/test/label/ej_combined_sample_15.txt'
-    audio_label_path = 'data/Q03.txt'
+    # audio_file_path = 'generated_data/test/data/ej_combined_sample_5.wav'
+    # audio_file_path = 'data/sample_Q_202205/sample_Q_M01/problem1.wav'
+    audio_file_path = 'data/Q08.wav'
+    audio_label_path = 'generated_data/test/label/ej_combined_sample_5.txt'
+    # audio_label_path = 'data/Q04.txt'
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
     trainer.load_model_from_path(args.model_file_path)
