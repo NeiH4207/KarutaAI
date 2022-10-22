@@ -88,11 +88,11 @@ class Trainer:
         
         return np.mean(val_losses), np.mean(val_accuracies)
     
-    def test(self, audio_file_path=None, label_file_path=None, data_config=None, k=1):
+    def test(self, audio_file_path=None, label_file_path=None, data_config=None, sr=48000, k=1):
         self.model.to(self.device)
         self.model.eval()
         #Going through each data_filename within a label
-        audio, sr = librosa.load(audio_file_path)
+        audio, sr = librosa.load(audio_file_path, sr=sr)
         data = audio_to_tensor(audio, sr, data_config)
     
         

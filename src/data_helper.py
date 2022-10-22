@@ -4,7 +4,9 @@ import numpy as np
 import math
 import os
 import librosa
+import librosa.display
 import json
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from src.utils import *
@@ -158,6 +160,13 @@ def preprocess3(datasetpath, original_label_file_path, dumppath, data_config):
         with open(dumppath, 'wb') as fp:
             pickle.dump(dataset, fp)
 
+def plot(y, sr):
+    plt.figure(figsize=(10, 4))
+    librosa.display.specshow(y, fmax=8000, x_axis='time')
+    plt.colorbar(format='%+2.0f')
+    plt.tight_layout()
+    plt.show()
+
 def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
     y = librosa.util.fix_length(audio, size=required_audio_size  * sr)
     mfcc = librosa.feature.mfcc(
@@ -171,6 +180,9 @@ def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
 
     chroma = librosa.feature.chroma_stft(y=y, sr=sr, 
                                             n_chroma=data_config['num_chroma'],
+                                            hop_length=data_config['hop_length'])
+    
+    mel = librosa.feature.melspectrogram(y=y, sr=sr,
                                             hop_length=data_config['hop_length'])
 
     spectral_contrast = librosa.feature.spectral_contrast(
@@ -197,12 +209,12 @@ def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
 def preprocess(datasetpath, dumppath, data_config):
     # datapath = os.path.join(datasetpath, 'data')
     labelpath = os.path.join(datasetpath, 'label')
-    required_audio_size = 5
+    required_audio_size = 2.5
     data_filenames = sorted(gather_files_from_folder(datasetpath, '.wav'))
     label_filenames = sorted(gather_files_from_folder(datasetpath, '.txt'))
     
     data = np.zeros(
-        (len(data_filenames), data_config['timeseries_length'],
+        (data_config['batch-length'], data_config['timeseries_length'],
          8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
     )
     target = []
@@ -217,19 +229,25 @@ def preprocess(datasetpath, dumppath, data_config):
             f.close()
         target.append(label)
         #Going through each data_filename within a label
-        audio, sr = librosa.load(data_filename)
+        audio, sr = librosa.load(data_filename, sr=data_config['sr'])
         data[i, :] = audio_to_tensor(audio, sr, data_config)[:]
-    dataset = {
-        'data': data,
-        'target': target
-    }
-    
-    if dumppath:
-        if not os.path.exists(dumppath):
-            os.makedirs(dumppath)
-        dumppath = os.path.join(dumppath, 'dataset.pickle')
-        with open(dumppath, 'wb') as fp:
-            pickle.dump(dataset, fp)
+        if (((i + 1) % data_config['batch-length']) == 0) or (i + 1) == len(data_filenames):
+            dataset = {
+                'data': data[:i+1],
+                'target': target
+            }
+            if dumppath:
+                if not os.path.exists(dumppath):
+                    os.makedirs(dumppath)
+                dumppath = os.path.join(dumppath, 'dataset_batch_{}.pickle'.\
+                    format(int((i + 1) / data_config['batch-length'])))
+                with open(dumppath, 'wb') as fp:
+                    pickle.dump(dataset, fp)
+            data = np.zeros(
+                (data_config['batch-length'], data_config['timeseries_length'],
+                8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
+            )
+            target = []
         
 def load_data(data_path):
     dumppath = os.path.join(data_path, 'dataset.pickle')

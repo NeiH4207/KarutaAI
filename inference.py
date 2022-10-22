@@ -9,7 +9,7 @@ from src.trainer import Trainer
 def parse_args():
     parser = argparse.ArgumentParser()
     # Dataset directory
-    parser.add_argument('--audio-file-path', type=str, default=None,
+    parser.add_argument('--audio-file-path', type=str, default='data/sample_Q_202205/sample_Q_M01/problem1.wav',
                         help='audio file to training data')
     
     parser.add_argument('--model-file-path', type=str, default='./trainned_models/model.pt')
@@ -34,7 +34,9 @@ def main():
         device = 'cpu'
     else:
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        
     data_config = {
+        'sr': 48000,
         'num_mfcc': 64,
         'num_chroma': 64,
         'n_fft': 2048,
@@ -52,7 +54,7 @@ def main():
     # audio_file_path = 'data/sample_Q_202205/sample_Q_M01/problem1.wav'
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
-    trainer.load_model_from_path(args.model_file_path)
+    # trainer.load_model_from_path(args.model_file_path)
     trainer.test(args.audio_file_path, data_config=data_config, k=args.k)
     
 if __name__ == "__main__":

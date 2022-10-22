@@ -8,25 +8,6 @@ from src.trainer import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--train-folder', type=str,
-                        default='generated_data/train',
-                        help='path to training data')
-    
-    parser.add_argument('--val-folder', type=str,
-                        default='generated_data/val',
-                        
-                        help='path to training data')
-    parser.add_argument('--test-folder', type=str,
-                        default='generated_data/test',
-                        help='path to training data')
-    
-    parser.add_argument('--original-label-data-path', type=str,
-                        default='data/JKspeech/',
-                        help='')
-    
-    parser.add_argument('--processed-data-path', type=str,
-                        default='tmp',
-                        help='')
     
     parser.add_argument('--model-path', type=str, default='./trainned_models"')
     
@@ -56,9 +37,6 @@ def parse_args():
     parser.add_argument('--load-model', action='store_true',
                         help='Retrainging with old model')
     
-    parser.add_argument('--preprocess', action='store_true', # default=True,
-                        help='Show validation results')
-    
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Show validation results')
     
@@ -67,26 +45,6 @@ def parse_args():
 
 def main():
     args = parse_args()
-    
-    
-    data_config = {
-        'num_mfcc': 64,
-        'num_chroma': 64,
-        'n_fft': 2048,
-        'hop_length': 512,
-        'timeseries_length': 216,
-        'sr': 22050
-    }
-    
-    if args.preprocess:
-        preprocess(args.train_folder, 
-                    os.path.join(args.processed_data_path, 'train'), data_config)
-        preprocess(args.val_folder, 
-                    os.path.join(args.processed_data_path, 'val'), data_config)
-        preprocess(args.test_folder, 
-                    os.path.join(args.processed_data_path, 'test'), data_config)
-        
-        
     x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
     x_val, y_val = load_data(os.path.join(args.processed_data_path, 'test'))
     
