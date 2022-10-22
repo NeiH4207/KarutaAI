@@ -19,11 +19,12 @@ setup (
         'matplotlib==3.5.1',
         'numpy==1.21.2',
         'pandas==1.3.3',
-        'torch==1.9.0',
+        'torch==1.12.0',
         'tqdm==4.62.3',
         'torchsummary==1.5.1',
         'scikit-learn==1.0.2',
         'seaborn==0.11.2',
+        'pydub==0.25.1'
     ],
     python_requires = '>=3.8',
     entry_points = {
