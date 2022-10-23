@@ -33,6 +33,8 @@ class Trainer:
         self.train_acc = []
         self.valid_acc = []
         self.test_acc = []
+        self.valid_loss_min = np.Inf
+        self.valid_acc_max = -np.Inf
         
         self.set_model_path(save_dir, save_name)
         
@@ -51,7 +53,7 @@ class Trainer:
     def split_batch(self, x, y, batch_size, shuffle=True):
         batches = []
         if shuffle:
-            indices = np.random.permutation(len(y))
+            indices = np.random.permutation(len(x))
             dataset = [x[i] for i in indices]
             labelset = [y[i] for i in indices]
         else:
@@ -117,8 +119,6 @@ class Trainer:
         counter = 0
         print_every = 5
         clip = 5
-        valid_loss_min = np.Inf
-        valid_acc_max = - np.Inf
         
         self.model.train()
         # scheduler = ReduceLROnPlateau(self.model.optimizer, factor=0.5, patience=0, verbose=True)
@@ -151,13 +151,13 @@ class Trainer:
                 print('Epoch: {}/{}'.format(i + 1, epochs))
                 print('Val accuracy:', val_acc)
                 print('Val loss:', val_loss)
-            if val_loss <= valid_loss_min:
+            if val_loss <= self.valid_loss_min:
                 print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.\
-                    format(valid_loss_min, val_loss))
+                    format(self.valid_loss_min, val_loss))
                 torch.save(self.model.state_dict(), self.model_path)
-                valid_loss_min = val_loss
-            elif val_acc > valid_acc_max:
-                valid_acc_max = val_acc
+                self.valid_loss_min = val_loss
+            elif val_acc > self.valid_acc_max:
+                self.valid_acc_max = val_acc
                 torch.save(self.model.state_dict(), self.model_path)
             # scheduler.step(val_loss)
                     

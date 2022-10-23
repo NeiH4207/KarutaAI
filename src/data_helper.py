@@ -168,7 +168,8 @@ def plot(y, sr):
     plt.show()
 
 def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
-    y = librosa.util.fix_length(audio, size=required_audio_size  * sr)
+    # print(audio.shape)
+    y = librosa.util.fix_length(audio, size=int(required_audio_size  * sr))
     mfcc = librosa.feature.mfcc(
         y=y, sr=sr, n_fft = data_config['n_fft'],
         hop_length=data_config['hop_length'], n_mfcc=data_config['num_mfcc']
@@ -209,7 +210,6 @@ def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
 def preprocess(datasetpath, dumppath, data_config):
     # datapath = os.path.join(datasetpath, 'data')
     labelpath = os.path.join(datasetpath, 'label')
-    required_audio_size = 2.5
     data_filenames = sorted(gather_files_from_folder(datasetpath, '.wav'))
     label_filenames = sorted(gather_files_from_folder(datasetpath, '.txt'))
     
@@ -230,18 +230,20 @@ def preprocess(datasetpath, dumppath, data_config):
         target.append(label)
         #Going through each data_filename within a label
         audio, sr = librosa.load(data_filename, sr=data_config['sr'])
-        data[i, :] = audio_to_tensor(audio, sr, data_config)[:]
+        idx = i % data_config['batch-length']
+        data[idx, :] = audio_to_tensor(audio, sr, data_config, 
+                                       data_config['fixed-time'])[:]
         if (((i + 1) % data_config['batch-length']) == 0) or (i + 1) == len(data_filenames):
             dataset = {
-                'data': data[:i+1],
+                'data': data[:idx+1],
                 'target': target
             }
             if dumppath:
                 if not os.path.exists(dumppath):
                     os.makedirs(dumppath)
-                dumppath = os.path.join(dumppath, 'dataset_batch_{}.pickle'.\
+                _dumppath = os.path.join(dumppath, 'dataset_batch_{}.pickle'.\
                     format(int((i + 1) / data_config['batch-length'])))
-                with open(dumppath, 'wb') as fp:
+                with open(_dumppath, 'wb') as fp:
                     pickle.dump(dataset, fp)
             data = np.zeros(
                 (data_config['batch-length'], data_config['timeseries_length'],
@@ -250,13 +252,12 @@ def preprocess(datasetpath, dumppath, data_config):
             target = []
         
 def load_data(data_path):
-    dumppath = os.path.join(data_path, 'dataset.pickle')
-    if not os.path.exists(dumppath):
-        print('Not found dataset in', dumppath)
+    if not os.path.exists(data_path):
+        print('Not found dataset in', data_path)
         return None, None
         
     print("Data loading ...\n")
-    with open(dumppath, "rb") as fp:
+    with open(data_path, "rb") as fp:
         data = pickle.load(fp)
     x = np.array(data["data"])
     y = np.array(data["target"])

@@ -2,17 +2,19 @@ import argparse
 import os
 import numpy as np
 from src.data_helper import load_data, preprocess
-from models.lstm import CLSTM
+from models.lstm import CLSTM, CNN
 import torch
 from src.trainer import Trainer
+from src.utils import gather_files_from_folder
 
 def parse_args():
     parser = argparse.ArgumentParser()
     
+    parser.add_argument('--datasetpath', type=str, default='transformed/max10/')
     parser.add_argument('--model-path', type=str, default='./trainned_models"')
     
     parser.add_argument('-d', '--model-save-dir', type=str, 
-                        default='trainned_models/',
+                        default='trainned_models/CNN/',
                         help='directory to save model')
     
     # Model hyperparameters
@@ -22,7 +24,7 @@ def parse_args():
     parser.add_argument('-o', '--optimizer', type=str, default='adam',
                         help='optimizer to use')
     
-    parser.add_argument('-e', '--epochs', type=int, default=1000,
+    parser.add_argument('-e', '--epochs', type=int, default=5,
                         help='number of epochs to train')
     
     parser.add_argument('--lr', type=float, default=0.0001,  
@@ -45,20 +47,23 @@ def parse_args():
 
 def main():
     args = parse_args()
-    x_train, y_train = load_data(os.path.join(args.processed_data_path, 'train'))
-    x_val, y_val = load_data(os.path.join(args.processed_data_path, 'test'))
-    
-    print("Number of training examples: %d" % x_train.shape[0])
+    x_val, y_val = load_data(os.path.join(args.datasetpath, 'val', 'dataset_batch_0.pickle'))
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     
     model = CLSTM(
-        input_size=x_train[0].shape[1],
+        input_size=x_val[0].shape[1],
         hidden_size=512,
         num_layers=2,
         num_classes=88, 
         device=device
     )
+    # model = CNN(
+    #     input_size=x_val[0].shape[1],
+    #     embbed_size=1024,
+    #     num_classes=88, 
+    #     device=device
+    # )
     
     training_params = {
         'loss_function': args.loss,
@@ -71,9 +76,15 @@ def main():
                       save_name="model.pt", device=device, verbose=True)
     if args.load_model:
         trainer.load_model_from_path(os.path.join(args.model_save_dir, "model.pt"))
-        
-    trainer.set_data(x_train, y_train, x_val, y_val)
-    trainer.train(optimizer=args.optimizer, training_params=training_params, )
+    
+    batch_names = gather_files_from_folder(os.path.join(
+        args.datasetpath, 'train'), _extension='.pickle')
+    
+    for _ in range(1000):
+        for trainpath in batch_names:
+            x_train, y_train = load_data(trainpath)
+            trainer.set_data(x_train, y_train, x_val, y_val)
+            trainer.train(optimizer=args.optimizer, training_params=training_params, )
     
 if __name__ == "__main__":
     main()

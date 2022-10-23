@@ -14,10 +14,10 @@ def parser_args():
                         default='ej')
     parser.add_argument('--num-gen-data', type=int,
                         help='the number of generated data',
-                        default=10000) 
-    parser.add_argument('--num_merge_data', type=int,
+                        default=327680) 
+    parser.add_argument('--num_mixed', type=int,
                         help='the max number of mixed readers',
-                        default=5) 
+                        default=10) 
     parser.add_argument('--min_time',
                         help='the minimum time audio', type=float,
                         default=0.5)
@@ -26,7 +26,7 @@ def parser_args():
                         default=2.5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/val')
+                        default='generated_data/max10/train')
     return parser.parse_args()
 
 def main():
@@ -73,8 +73,8 @@ def main():
         os.makedirs(label_path)
     
     for idx in tqdm(range(args.num_gen_data)):
-        num_merge_data = 1 + np.random.randint(1, max(2, args.num_merge_data))
-        ids = np.random.randint(0, len(all_samples), size=num_merge_data)
+        num_mixed = 1 + np.random.randint(1, max(2, args.num_mixed))
+        ids = np.random.randint(0, len(all_samples), size=num_mixed)
         samples = all_samples[ids]
         labels = all_labels[ids]
         audio_file_path = os.path.join(data_path, '{}_combined_sample_{}.wav'.format(args.language, idx))
