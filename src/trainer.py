@@ -90,7 +90,9 @@ class Trainer:
         
         return np.mean(val_losses), np.mean(val_accuracies)
     
-    def test(self, audio_file_path=None, label_file_path=None, data_config=None, sr=48000, k=1):
+    def test(self, audio_file_path=None, 
+             label_file_path=None, data_config=None, 
+             sr=48000, k=1, plot=False):
         self.model.to(self.device)
         self.model.eval()
         #Going through each data_filename within a label
@@ -100,13 +102,18 @@ class Trainer:
         
         inp = Variable(torch.FloatTensor([data]).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
-        labels = np.array(['E' + str(i + 1) for i in range(44)] + ['J' + str(i + 1) for i in range(44)] )
-        df = pd.DataFrame({'probability':prob_out, 'labels': labels})
-        ax = sns.barplot(x='labels', y='probability',
-                 data=df, errwidth=0)
-        plt.xticks(color = 'w')
-        plt.show()
-        print(labels[np.argsort(prob_out)[::-1]][:k])
+        labels = np.array(['E' + ('0' if (i%44)+1<10 else '') + str(i + 1) for i in range(44)] \
+            + ['J' + ('0' if (i%44)+1<10 else '') + str(i + 1) for i in range(44)] )
+        if plot:
+            df = pd.DataFrame({'probability':prob_out, 'labels': labels})
+            ax = sns.barplot(x='labels', y='probability',
+                    data=df, errwidth=0)
+            plt.xticks(color = 'w')
+            plt.show()
+        ans = labels[np.argsort(prob_out)[::-1]][:k]
+        strans = '[' + ", ".join(['"%s"'%x for x in ans]) + ']'
+        print(strans)
+        
         
     def train(self, optimizer='adam', training_params=None):
         # utility for running the training process

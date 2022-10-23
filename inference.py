@@ -22,6 +22,9 @@ def parse_args():
     parser.add_argument('--cpu', action='store_true',
                         help='Use cpu cores instead')
     
+    parser.add_argument('--plot', action='store_true',
+                        help='Plot probability distribution')
+    
     
     args = parser.parse_args() 
     return args
@@ -59,7 +62,9 @@ def main():
     trainer = Trainer(model, save_dir=args.model_save_dir, 
                       save_name="model.pt", device=device, verbose=True)
     trainer.load_model_from_path(args.model_file_path)
-    trainer.test(args.audio_file_path, data_config=data_config, k=args.k)
+    trainer.test(args.audio_file_path, 
+                 data_config=data_config, 
+                 k=args.k, plot=args.plot)
     
 if __name__ == "__main__":
     main()
