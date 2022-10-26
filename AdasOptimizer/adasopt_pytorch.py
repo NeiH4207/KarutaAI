@@ -46,9 +46,9 @@ class Adas(Optimizer):
     """
 
     def __init__(self, params,
-            lr = 0.001, lr2 = .005, lr3 = .0005,
-            beta_1 = 0.999, beta_2 = 0.999, beta_3 = 0.9999,
-            epsilon = 1e-8, **kwargs):
+                 lr=0.001, lr2=.005, lr3=.0005,
+                 beta_1=0.999, beta_2=0.999, beta_3=0.9999,
+                 epsilon=1e-8, **kwargs):
         betas = [beta_1, beta_2, beta_3]
         if not 0.0 <= lr:
             raise ValueError("Invalid lr: {}".format(lr))
@@ -64,7 +64,8 @@ class Adas(Optimizer):
             raise ValueError("Invalid beta_2 parameter: {}".format(betas[1]))
         if not 0.0 <= beta_3 < 1.0:
             raise ValueError("Invalid beta_3 parameter: {}".format(betas[2]))
-        defaults = dict(lr=lr, lr2=lr2, lr3=lr3, beta_1=beta_1, beta_2=beta_2, beta_3=beta_3, epsilon=epsilon)
+        defaults = dict(lr=lr, lr2=lr2, lr3=lr3, beta_1=beta_1,
+                        beta_2=beta_2, beta_3=beta_3, epsilon=epsilon)
         self._varn = None
         self._is_create_slots = None
         self._curr_var = None
@@ -81,44 +82,46 @@ class Adas(Optimizer):
         super(Adas, self).__setstate__(state)
 
     @torch.no_grad()
-    def _add(self,x,y):
+    def _add(self, x, y):
         x.add_(y)
         return x
 
     @torch.no_grad()
     # TODO: fix variables' names being too convoluted in _derivatives_normalizer and _get_updates_universal_impl
-    def _derivatives_normalizer(self,derivative,beta):
-        steps = self._make_variable(0,(),derivative.dtype)
-        self._add(steps,1)
+    def _derivatives_normalizer(self, derivative, beta):
+        steps = self._make_variable(0, (), derivative.dtype)
+        self._add(steps, 1)
         factor = (1. - (self._beta_1 ** steps)).sqrt()
-        m = self._make_variable(0,derivative.shape,derivative.dtype)
-        moments = self._make_variable(0,derivative.shape,derivative.dtype)
+        m = self._make_variable(0, derivative.shape, derivative.dtype)
+        moments = self._make_variable(0, derivative.shape, derivative.dtype)
         m.mul_(self._beta_1).add_((1 - self._beta_1) * derivative * derivative)
         np_t = derivative * factor / (m.sqrt() + self._epsilon)
-        #the third returned value should be called when the moments is finally unused, so it's updated
-        return (moments,np_t,lambda: moments.mul_(beta).add_((1 - beta) * np_t))
+        # the third returned value should be called when the moments is finally unused, so it's updated
+        return (moments, np_t, lambda: moments.mul_(beta).add_((1 - beta) * np_t))
 
-    def _make_variable(self,value,shape,dtype):
+    def _make_variable(self, value, shape, dtype):
         self._varn += 1
         name = 'unnamed_variable' + str(self._varn)
         if self._is_create_slots:
-            self.state[self._curr_var][name] = torch.full(size=shape,fill_value=value,dtype=dtype,device=self._curr_var.device)
+            self.state[self._curr_var][name] = torch.full(
+                size=shape, fill_value=value, dtype=dtype, device=self._curr_var.device)
         return self.state[self._curr_var][name]
 
     @torch.no_grad()
     def _get_updates_universal_impl(self, grad, param):
-        lr = self._make_variable(value = self._lr,shape=param.shape[1:], dtype=param.dtype)
-        moment, deriv, f = self._derivatives_normalizer(grad,self._beta_3)
-        param.add_( - torch.unsqueeze(lr,0) * deriv)
-        lr_deriv = torch.sum(moment * grad,0)
+        lr = self._make_variable(
+            value=self._lr, shape=param.shape[1:], dtype=param.dtype)
+        moment, deriv, f = self._derivatives_normalizer(grad, self._beta_3)
+        param.add_(- torch.unsqueeze(lr, 0) * deriv)
+        lr_deriv = torch.sum(moment * grad, 0)
         f()
-        master_lr = self._make_variable(self._lr2,(),dtype=torch.float32)
-        m2,d2, f = self._derivatives_normalizer(lr_deriv,self._beta_2)
-        self._add(lr,master_lr * lr * d2)
+        master_lr = self._make_variable(self._lr2, (), dtype=torch.float32)
+        m2, d2, f = self._derivatives_normalizer(lr_deriv, self._beta_2)
+        self._add(lr, master_lr * lr * d2)
         master_lr_deriv2 = torch.sum(m2 * lr_deriv)
         f()
-        m3,d3,f = self._derivatives_normalizer(master_lr_deriv2,0.)
-        self._add(master_lr,self._lr3 * master_lr * d3)
+        m3, d3, f = self._derivatives_normalizer(master_lr_deriv2, 0.)
+        self._add(master_lr, self._lr3 * master_lr * d3)
         f()
 
     @torch.no_grad()
@@ -126,7 +129,7 @@ class Adas(Optimizer):
         self._curr_var = param
         self._is_create_slots = is_create_slots
         self._varn = 0
-        return self._get_updates_universal_impl(grad,self._curr_var.data)
+        return self._get_updates_universal_impl(grad, self._curr_var.data)
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -147,6 +150,7 @@ class Adas(Optimizer):
                     continue
                 grad = p.grad.data
                 if grad.is_sparse:
-                    raise RuntimeError('Adas does not support sparse gradients')
-                self._get_updates_universal(p,grad,len(self.state[p]) == 0)
+                    raise RuntimeError(
+                        'Adas does not support sparse gradients')
+                self._get_updates_universal(p, grad, len(self.state[p]) == 0)
         return loss

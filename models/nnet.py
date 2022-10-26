@@ -20,18 +20,18 @@ class NNet(nn.Module):
         else:
             print('Using CPU')
         self.train_losses = []
-        
+
     def forward(self, x1, x2):
         pass
 
     def predict(self, input_1, input_2):
         input_1 = torch.FloatTensor(np.array(input_1)).to(self.device).detach()
-        input_2 = torch.FloatTensor(np.array(input_2)).to(self.device).detach() 
-        # input_1 = input_1.view(-1, input_1.shape[0], input_1.shape[1], input_1.shape[2])  
+        input_2 = torch.FloatTensor(np.array(input_2)).to(self.device).detach()
+        # input_1 = input_1.view(-1, input_1.shape[0], input_1.shape[1], input_1.shape[2])
         # input_2 = input_2.view(-1, 8)
         output = self.forward(input_1, input_2)
         return output.cpu().data.numpy().flatten()
- 
+
     def set_loss_function(self, loss):
         if loss == "mse":
             self.loss = nn.MSELoss()
@@ -51,54 +51,61 @@ class NNet(nn.Module):
             self.loss = nn.MultiLabelSoftMarginLoss()
         else:
             raise ValueError("Loss function not found")
-        
+
     def set_optimizer(self, optimizer, lr):
         self.lr = lr
         if optimizer == "sgd":
-            self.optimizer = optim.SGD(self.parameters(), lr=lr)		# Tối ưu theo gradient descent thuần túy
+            # Tối ưu theo gradient descent thuần túy
+            self.optimizer = optim.SGD(self.parameters(), lr=lr)
         elif optimizer == "adam":
             self.optimizer = optim.Adam(self.parameters(), lr=lr)
         elif optimizer == "adamax":
             self.optimizer = optim.Adamax(self.parameters(), lr=lr)
         elif optimizer == "adadelta":
-            self.optimizer = optim.Adadelta(self.parameters(), lr=lr)		# Phương pháp Adadelta có lr update
+            # Phương pháp Adadelta có lr update
+            self.optimizer = optim.Adadelta(self.parameters(), lr=lr)
         elif optimizer == "adagrad":
-            self.optimizer = optim.Adagrad(self.parameters(), lr=lr)		# Phương pháp Adagrad chỉ cập nhật lr ko nhớ
+            # Phương pháp Adagrad chỉ cập nhật lr ko nhớ
+            self.optimizer = optim.Adagrad(self.parameters(), lr=lr)
         elif optimizer == "rmsprop":
             self.optimizer = optim.RMSprop(self.parameters(), lr=lr)
         elif optimizer == "nadam":
             self.optimizer = optim.NAdam(self.parameters(), lr=lr)
-            
+
     def reset_grad(self):
         self.optimizer.zero_grad()
-        
+
     def step(self):
         self.optimizer.step()
-          
+
     def load_checkpoint(self, epoch, batch_idx):
-        checkpoint = torch.load("{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx), map_location=self.device)
+        checkpoint = torch.load("{}/{}_{}_{}.pt".format(model_configs.save_dir,
+                                self.name, epoch, batch_idx), map_location=self.device)
         self.load_state_dict(checkpoint['state_dict'])
         self.train_losses = checkpoint['train_loss']
         self.optimizer = checkpoint['optimizer']
         # self.load_state_dict(checkpoint)
-        print('-- Load model succesfull!')
-        
+        print('-- Load model successful!')
+
     def save_checkpoint(self, epoch, batch_idx):
         torch.save({
             'state_dict': self.state_dict(),
             'train_loss': self.train_losses,
             'optimizer': self.optimizer
         }, "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx))
-        
+
     def save_train_losses(self, train_losses):
         self.train_losses = train_losses
-        
+
     def save(self, epoch, batch_idx):
-        torch.save(self.state_dict(), "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx))
+        torch.save(self.state_dict(
+        ), "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx))
         # print("Model saved")
-        
+
     def load(self, epoch, batch_idx, model_name=None):
         if model_name is None:
-            self.load_state_dict(torch.load("{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx)))
+            self.load_state_dict(torch.load(
+                "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx)))
         else:
-            self.load_state_dict(torch.load("{}/{}.pt".format(model_configs.save_dir, model_name)))
+            self.load_state_dict(torch.load(
+                "{}/{}.pt".format(model_configs.save_dir, model_name)))

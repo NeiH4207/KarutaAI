@@ -10,6 +10,7 @@ import sklearn.metrics as metrics
 import seaborn as sns
 import os
 
+
 class Evaluator(object):
     
     def __init__(self, model=None) -> None:
