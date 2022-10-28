@@ -101,10 +101,11 @@ class CNN(nn.Module):
 
 
 class CRNN(NNet):
-    def __init__(self, input_shape, rnn_hidden_size, rnn_num_layers, num_classes, in_channels=1, dropout=0.0, device=device):
+    def __init__(self, input_shape, num_chunks, rnn_hidden_size, rnn_num_layers, num_classes, in_channels=1, dropout=0.0, device=device):
         super(NNet, self).__init__()
 
         self.input_shape = input_shape
+        self.num_chunks = num_chunks
         self.in_channels = in_channels
         self.rnn_hidden_size = rnn_hidden_size
         self.rnn_num_layers = rnn_num_layers
@@ -142,25 +143,36 @@ class CRNN(NNet):
             device=device
         )
         frequency, time = self.input_shape
-        cnn_out = cal_cnn_out(h=frequency, w=time)
+        cnn_out_size = cal_cnn_out(h=frequency, w=time)
         self.rnn = BiLSTM(
-            input_size=cnn_out,
+            input_size=cnn_out_size,
             hidden_size=rnn_hidden_size,
             num_layers=rnn_num_layers
         )
         self.fc1 = nn.Linear(rnn_hidden_size * 4, 512)
         self.fc2 = nn.Linear(rnn_hidden_size * 4, 512)
-        self.fc3 = nn.Linear(512, num_classes//2)
-        self.fc4 = nn.Linear(512, num_classes//2)
+        self.fc3 = nn.Linear(512, num_classes // 2)
+        self.fc4 = nn.Linear(512, num_classes // 2)
 
         self.dropout = nn.Dropout(dropout, training=self.training)
         self.sigmoid = nn.Sigmoid()
         self.device = device
 
     def forward(self, x):
-        x = self.cnn(x)
-        out1, out2 = self.rnn(x)
+        # input shape = (batch, channels, frequency, time)
+        # split to chunks
+        chunks = torch.chunk(x, self.num_chunks, dim=-1)
+
+        cnn_out = None
+        for chunk in chunks:
+            out = self.cnn(chunk)
+            if cnn_out is None:
+                cnn_out = out
+            else:
+                cnn_out = torch.cat([cnn_out, out], dim=1)
+
+        out1, out2 = self.rnn(cnn_out)
         out1 = self.dropout(F.elu(self.fc1(out1)))
         out2 = self.dropout(F.elu(self.fc2(out2)))
-        out = torch.cat(self.fc3(out1), self.fc4(out2), dim=1)
+        out = torch.cat([self.fc3(out1), self.fc4(out2)], dim=1)
         return self.sigmoid(out)
