@@ -10,10 +10,10 @@ def parse_args():
                         default='data/Q03.wav',
                         help='audio file to training data')
     
-    parser.add_argument('--model-file-path', type=str, default='./trainned_models/CNN/model.pt')
+    parser.add_argument('--model-file-path', type=str, default='./trained_models/CNN/model.pt')
     
     parser.add_argument('-d', '--model-save-dir', type=str, 
-                        default='trainned_models/',
+                        default='trained_models/',
                         help='directory to save model')
     
     parser.add_argument('-k', type=int, default=1,

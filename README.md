@@ -1,6 +1,7 @@
 # KaturaAI
 
 ### Folder tree
+
 ```
 .
 ├── data
@@ -54,7 +55,6 @@ python3 generate_data.py --datapath ./data/JKspeech/ --language ej --num-gen-dat
 python3 generate_data.py --datapath ./data/JKspeech/ --language ej --num-gen-data 500 --num_merge_data 5 --gen-data-path generated_data/val/
 ```
 
-
 ```
 python3 generate_data.py --datapath ./data/JKspeech/ --language ej --num-gen-data 500 --num_merge_data 5 --gen-data-path generated_data/test/
 ```
@@ -80,6 +80,7 @@ optional arguments:
 ```
 
 ### How to training model
+
 ```
 python3 main.py --preprocess \
     --model-save-dir trained_models/ \
@@ -129,8 +130,9 @@ optional arguments:
 ### How to inference an audio file with trained model
 
 ```
-python3 inference.py --audio-file-path data/sample_Q_202205/sample_Q_E01/problem.wav --model-file-path ./trainned_models/model.pt -k 3 
+python3 inference.py --audio-file-path data/sample_Q_202205/sample_Q_E01/problem.wav --model-file-path ./trained_models/model.pt -k 3 
 ```
+
 ```
 usage: inference.py [-h] [--audio-file-path AUDIO_FILE_PATH] [--model-file-path MODEL_FILE_PATH]
                     [-d MODEL_SAVE_DIR] [-k K] [--cpu]

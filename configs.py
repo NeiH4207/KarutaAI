@@ -32,6 +32,6 @@ img_configs = {
 model_configs = dotdict({
     'dropout': 0.7,
     'num_channels': 256,
-    'save_dir': './trainned_models',
+    'save_dir': './trained_models',
     'save_name': 'model'
 })
