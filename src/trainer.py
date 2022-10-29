@@ -60,9 +60,8 @@ class Trainer:
             dataset = x
             labelset = y
         for i in range(0, len(dataset), batch_size):
-            batches.append((dataset[i:i + batch_size],
-                           labelset[i:i + batch_size]))
-
+            batches.append((np.array(dataset[i:i + batch_size]), np.array(labelset[i:i + batch_size])))
+            
         return batches
 
     def eval(self, val_loader):
@@ -92,18 +91,18 @@ class Trainer:
         self.model.train()
 
         return np.mean(val_losses), np.mean(val_accuracies)
-
-    def test(self, audio_file_path=None,
-             label_file_path=None, data_config=None,
-             sr=48000, k=1, plot=False):
+    
+    def test(self, audio_file_path=None, 
+             label_file_path=None, data_config=None, 
+            k=1, plot=False):
         self.model.to(self.device)
         self.model.eval()
-        # Going through each data_filename within a label
-        audio, sr = librosa.load(audio_file_path, sr=sr)
-        data = audio_to_tensor(audio, sr, data_config)
-
-        inp = Variable(torch.FloatTensor([data]).to(
-            self.device), requires_grad=False)
+        #Going through each data_filename within a label
+        audio, sr = librosa.load(audio_file_path, sr=data_config['sr'])
+        data = audio_to_tensor(audio, sr, data_config, data_config['fixed-time'])
+    
+        
+        inp = Variable(torch.FloatTensor(np.array([data])).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
         labels = np.array(['E' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)]
                           + ['J' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)])

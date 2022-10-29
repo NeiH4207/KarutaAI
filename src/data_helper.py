@@ -183,8 +183,8 @@ def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
                                             n_chroma=data_config['num_chroma'],
                                             hop_length=data_config['hop_length'])
     
-    mel = librosa.feature.melspectrogram(y=y, sr=sr,
-                                            hop_length=data_config['hop_length'])
+    # mel = librosa.feature.melspectrogram(y=y, sr=sr,
+    #                                         hop_length=data_config['hop_length'])
 
     spectral_contrast = librosa.feature.spectral_contrast(
         y=y, sr=sr, hop_length=data_config['hop_length']
