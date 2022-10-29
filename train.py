@@ -72,7 +72,7 @@ def main():
     # )
     model = RCNN(
         input_shape=x_val[0].shape,
-        num_chunks= 16,
+        num_chunks= 4,
         in_channels=1,
         rnn_hidden_size=512,
         rnn_num_layers=2,
