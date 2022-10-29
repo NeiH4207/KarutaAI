@@ -6,15 +6,15 @@ from src.data_helper import preprocess
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--train-folder', type=str,
-                        default='generated_data/max10/train',
+                        default='generated_data/max15/train',
                         help='path to training data')
 
     parser.add_argument('--val-folder', type=str,
-                        default='generated_data/max10/val',
+                        default='generated_data/max15/val',
 
                         help='path to training data')
     parser.add_argument('--test-folder', type=str,
-                        default='generated_data/max10/test',
+                        default='generated_data/max15/test',
                         help='path to training data')
 
     parser.add_argument('--original-label-data-path', type=str,
@@ -22,7 +22,7 @@ def parse_args():
                         help='')
 
     parser.add_argument('--processed-data-path', type=str,
-                        default='transformed/max10/',
+                        default='transformed/max15/',
                         help='')
 
     parser.add_argument('--seed', type=int, default=233,
