@@ -29,7 +29,8 @@ class BiLSTM(nn.Module):
         out1, (h1, c1) = self.lstm1(x, (h0, c0))
         # shape = (batch_size, seq_length, hidden_size)
         out2, (h2, c2) = self.lstm2(x, (h1, c1))
-        return out1[:, -1, :], out2[:, -1, :]
+        return torch.cat([out1[:, -1, :], h1[0], h1[-1]], dim=1),\
+            torch.cat([out2[:, -1, :], h2[0], h2[-1]], dim=1)
 
 
 class CNN(nn.Module):
@@ -79,9 +80,13 @@ class CNN(nn.Module):
 
         # input_shape = (batch, 1, 235, 136)
         add_block(0, batch_normalization=True)  # (batch, 64, _, _)
-        cnn.add_module('dropout_0', nn.Dropout2d(0.3))
+        # cnn.add_module('dropout_0', nn.Dropout2d(0.3))
         add_block(1, batch_normalization=True)  # (batch, 128, _, _)
-        cnn.add_module('dropout_1', nn.Dropout2d(0.3))
+        # cnn.add_module('dropout_1', nn.Dropout2d(0.3))
+        add_block(2, batch_normalization=True)  # (batch, 128, _, _)
+        # cnn.add_module('dropout_2', nn.Dropout2d(0.3))
+        # add_block(3, batch_normalization=True)  # (batch, 128, _, _)
+        # cnn.add_module('dropout_3', nn.Dropout2d(0.3))
 
         self.cnn = cnn
         self.device = device
@@ -110,13 +115,13 @@ class RCNN(NNet):
         self.rnn_hidden_size = rnn_hidden_size
         self.rnn_num_layers = rnn_num_layers
         self.num_classes = num_classes
-        self.n_cnn_layers = 2   
+        self.n_cnn_layers = 3
         self.window_length = ((( self.input_shape[0] - 1) // self.num_chunks) + 1)
-        conv_kernels = [(13, 3), (13, 3), 3, 3]
-        paddings = [(0, 1), (0, 1), 1, 1]
-        strides = [1, 1, 1, 1]
+        conv_kernels = [(5, 2), (5, 2), (5, 2), (3, 2)]
+        paddings = [(0, 1), (0, 1), (0, 0), (0, 0)]
+        strides = [(1, 1), (1, 1), (2, 1), (1, 1)]
         channels = [64, 128, 256, 512]
-        pool_kernels = [2, 2, 2, 2]
+        pool_kernels = [(2, 2), (2, 2), (2, 2), (1, 1)]
 
         def cal_cnn_out(h, w):
             for i in range(self.n_cnn_layers):
@@ -151,8 +156,8 @@ class RCNN(NNet):
             num_layers=rnn_num_layers,
             device = device
         )
-        self.fc1 = nn.Linear(rnn_hidden_size * 2, 512)
-        self.fc2 = nn.Linear(rnn_hidden_size * 2, 512)
+        self.fc1 = nn.Linear(rnn_hidden_size * 4, 512)
+        self.fc2 = nn.Linear(rnn_hidden_size * 4, 512)
         self.fc3 = nn.Linear(512, num_classes // 2)
         self.fc4 = nn.Linear(512, num_classes // 2)
 
