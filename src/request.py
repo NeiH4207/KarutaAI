@@ -94,4 +94,3 @@ class Socket:
         header['Content-Type'] = 'text/plain'
         response = requests.post(url, headers=header, data=data_text, verify=False)
         return response.json()
-    
