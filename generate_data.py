@@ -15,10 +15,13 @@ def parser_args():
                         default='ej')
     parser.add_argument('--num-gen-data', type=int,
                         help='the number of generated data',
-                        default=327680)
+                        default=16384)
     parser.add_argument('--num_mixed', type=int,
                         help='the max number of mixed readers',
                         default=10)
+    parser.add_argument('--num_segs', type=int,
+                        help='the random segments readers',
+                        default=30)
     parser.add_argument('--min_time',
                         help='the minimum time audio', type=float,
                         default=0.5)
@@ -27,7 +30,7 @@ def parser_args():
                         default=2.5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/max10/train')
+                        default='generated_data/max10/test')
     return parser.parse_args()
 
 
@@ -59,9 +62,9 @@ def main():
         time_interval = random()*(args.max_time - args.min_time) / \
             args.min_time + args.min_time
         samples = split_wav_by_time(
-            data, params, time_interval=time_interval, num_samples=30)
-        all_samples.extend(samples)
-        all_labels.extend([fn.split('/')[-1].split('.')[0]] * len(samples))
+            data, params, time_interval=time_interval, num_samples=args.num_segs)
+        all_samples.append(samples)
+        all_labels.append([fn.split('/')[-1].split('.')[0]] * len(samples))
 
     all_labels = np.array(all_labels, dtype=str)
     all_samples = np.array(all_samples, dtype=object)
@@ -79,8 +82,13 @@ def main():
     for idx in tqdm(range(args.num_gen_data)):
         num_mixed = 1 + np.random.randint(1, max(2, args.num_mixed))
         ids = np.random.randint(0, len(all_samples), size=num_mixed)
-        samples = all_samples[ids]
-        labels = all_labels[ids]
+        labels = []
+        samples = []
+        selected_sample_ids = np.array([np.random.choice(args.num_segs, 1)[0] 
+                            for _ in range(len(ids))])
+        for i, id in enumerate(ids):
+            samples.append(all_samples[id][i])
+            labels.append(all_labels[id][i])
         audio_file_path = os.path.join(
             data_path, '{}_combined_sample_{}.wav'.format(args.language, idx))
         label_file_path = os.path.join(

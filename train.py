@@ -3,6 +3,7 @@ import os
 import numpy as np
 from src.data_helper import load_data, preprocess
 from models.lstm import CLSTM, CNN
+from models.rcnn import RCNN
 import torch
 from src.trainer import Trainer
 from src.utils import gather_files_from_folder
@@ -55,19 +56,29 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    model = CLSTM(
-        input_size=x_val[0].shape[1],
-        hidden_size=512,
-        num_layers=2,
-        num_classes=88,
-        device=device
-    )
+    # model = CLSTM(
+    #     input_size=x_val[0].shape[1],
+    #     hidden_size=512,
+    #     num_layers=2,
+    #     num_classes=88,
+    #     device=device
+    # )
+    
     # model = CNN(
     #     input_size=x_val[0].shape[1],
     #     embed_size=1024,
     #     num_classes=88,
     #     device=device
     # )
+    model = RCNN(
+        input_shape=x_val[0].shape,
+        num_chunks= 16,
+        in_channels=1,
+        rnn_hidden_size=512,
+        rnn_num_layers=2,
+        num_classes=88, 
+        device=device
+    )
 
     training_params = {
         'loss_function': args.loss,
