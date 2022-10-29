@@ -52,12 +52,21 @@ class Socket:
         url = END_POINT_API + '/question/{}/audio/problemdata'.format(id)
         response = requests.get(url, headers=self.headers, verify=False)
         return response
+
+    def post_div_audio(self, id, n_parts):
+        url = END_POINT_API + '/question/{}/divided-data'.format(id)
+        body = {
+            'n_divided': n_parts
+        }
+        response = requests.post(url, headers=self.headers, json=body, verify=False)
+        sdata = response.content
+        return sdata
     
     def get_div_audio(self, id, part):
         url = END_POINT_API + '/question/{}/audio/divided-data?index={}'.format(id, part)
         response = requests.get(url, headers=self.headers, verify=False)
         sdata = response.content
-        typ = { 1: np.uint8, 2: np.uint16, 4: np.uint32 }.get(4)
+        typ = { 1: np.uint8, 2: np.uint16, 4: np.uint32 }.get(2)
         print ("Extracting channel {} out of {} channels, {}-bit depth".format(0+1, 1, 2*8))
         data = np.frombuffer(sdata, dtype=typ)
         return data
