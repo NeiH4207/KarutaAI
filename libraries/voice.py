@@ -56,10 +56,12 @@ def split_wav_by_time(wav_data, params, time_interval=1.0, num_samples=1):
     wav_len = wav_data.shape[0]
     seconds = wav_len / params.framerate
     sample_len = min(wav_len, int(time_interval / seconds * wav_len))
-    random_start_idx = [np.random.randint(
-        0, min(wav_len, sample_len)) for _ in range(num_samples)]
+    min_offset = 4800
+    start_idx = [x for x in range(
+        0, min(wav_len, sample_len) // min_offset)]
+    start_idx = [idx * min_offset for idx in start_idx]
     samples = [wav_data[start_idx:start_idx+sample_len]
-               for start_idx in random_start_idx]
+               for start_idx in start_idx]
     return samples
 
 
