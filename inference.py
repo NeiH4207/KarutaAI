@@ -37,13 +37,18 @@ def main():
         device = "cuda" if torch.cuda.is_available() else "cpu"
     
     data_config = {
-        'sr': 48000,
-        'num_mfcc': 64,
+        'batch-length': 32768,
+        'num_mfcc': 39,
         'num_chroma': 64,
         'n_fft': 2048,
         'hop_length': 512,
-        'timeseries_length': 469
+        'sr': 48000,
+        'fixed-time': 2.5
     }
+    
+    data_config['timeseries_length'] = int(1 + \
+        (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
+
     
     model = CLSTM(
         input_size=136,
@@ -52,6 +57,7 @@ def main():
         num_classes=88, 
         device=device
     )
+    
     # model = CNN(
     #     input_size=281,
     #     embbed_size=1024,

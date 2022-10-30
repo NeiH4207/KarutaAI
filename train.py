@@ -4,6 +4,7 @@ import numpy as np
 from src.data_helper import load_data, preprocess
 from models.lstm import CLSTM, CNN
 from models.rcnn import RCNN
+from models.arcnn import ARCNN
 import torch
 from src.trainer import Trainer
 from src.utils import gather_files_from_folder
@@ -70,7 +71,7 @@ def main():
     #     num_classes=88,
     #     device=device
     # )
-    model = RCNN(
+    model = ARCNN(
         input_shape=x_val[0].shape,
         num_chunks= 4,
         in_channels=1,
