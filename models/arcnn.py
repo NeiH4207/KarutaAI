@@ -80,13 +80,13 @@ class CNN(nn.Module):
 
         # input_shape = (batch, 1, 235, 136)
         add_block(0, batch_normalization=True)  # (batch, 64, _, _)
-        cnn.add_module('dropout_0', nn.Dropout2d(0.3))
+        cnn.add_module('dropout_0', nn.Dropout2d(0.4))
         add_block(1, batch_normalization=True)  # (batch, 128, _, _)
         cnn.add_module('dropout_1', nn.Dropout2d(0.3))
         add_block(2, batch_normalization=True)  # (batch, 128, _, _)
-        cnn.add_module('dropout_2', nn.Dropout2d(0.3))
-        # add_block(3, batch_normalization=True)  # (batch, 128, _, _)
-        # cnn.add_module('dropout_3', nn.Dropout2d(0.3))
+        cnn.add_module('dropout_2', nn.Dropout2d(0.2))
+        add_block(3, batch_normalization=True)  # (batch, 128, _, _)
+        cnn.add_module('dropout_3', nn.Dropout2d(0.1))
 
         self.cnn = cnn
         self.device = device
@@ -118,14 +118,14 @@ class ARCNN(NNet):
         self.rnn_hidden_size = rnn_hidden_size
         self.rnn_num_layers = rnn_num_layers
         self.num_classes = num_classes
-        self.n_cnn_layers = 3
+        self.n_cnn_layers = 4
         self.device = device
         self.window_length = ((( self.input_shape[0] - 1) // self.num_chunks) + 1)
         conv_kernels = [(3, 3), (3, 3), (3, 3), (3, 3)]
-        paddings = [(1, 1), (1, 1), (0, 0), (0, 0)]
-        strides = [(1, 1), (1, 1), (1, 1), (2, 2)]
+        paddings = [(0, 1), (0, 1), (0, 0), (0, 0)]
+        strides = [(1, 1), (1, 1), (1, 1), (1, 1)]
         channels = [64, 128, 256, 512]
-        pool_kernels = [(2, 2), (2, 2), (2, 2), (1, 1)]
+        pool_kernels = [(2, 2), (2, 2), (2, 2), (2, 2)]
 
         def cal_cnn_out(h, w):
             for i in range(self.n_cnn_layers):
@@ -161,15 +161,11 @@ class ARCNN(NNet):
             num_layers=self.rnn_num_layers,
             device = self.device
         )
-        # self.rnn2 = BiLSTM(
-        #     input_size=self.cnn_out_size,
-        #     hidden_size=rnn_hidden_size,
-        #     num_layers=rnn_num_layers,
-        #     device = device
-        # )
         
-        self.fc1 = nn.Linear(self.rnn_hidden_size * 2, 512)
-        self.fc2 = nn.Linear(self.cnn_out_size * time, 512)
+        self.fc1 = nn.Linear(self.rnn_hidden_size * 3 
+                             + self.cnn_out_size, 512)
+        self.fc2 = nn.Linear(self.rnn_hidden_size * 3 
+                             + self.cnn_out_size, 512)
         self.fc3 = nn.Linear(512 * self.num_chunks, num_classes // 2)
         self.fc4 = nn.Linear(512 * self.num_chunks, num_classes // 2)
 
@@ -187,30 +183,35 @@ class ARCNN(NNet):
         x = torch.cat([x, padding_part], axis=-1)
         chunks = torch.chunk(x, self.num_chunks, dim=-1)
         cnn_out = None
-        lstm_out = None
+        lstm_out1 = None
+        lstm_out2 = None
         
         for chunk in chunks:
             lstm_chunk = chunk[:, :self.input_shape[1] // 2, :].permute(0, 2, 1)
             cnn_chunk = chunk[:, self.input_shape[1] // 2:, :]
             cnn_chunk_out = self.cnn(cnn_chunk)
-            lstm_chunk_out = self.rnn(lstm_chunk)
+            lstm_chunk_out1,  lstm_chunk_out2 = self.rnn(lstm_chunk)
             
             cnn_chunk_out = cnn_chunk_out.view(cnn_chunk_out.shape[0], -1)
-            lstm_chunk_out = torch.cat(lstm_chunk_out, dim=1)
             
             cnn_chunk_out = cnn_chunk_out.unsqueeze(1)
-            lstm_chunk_out = lstm_chunk_out.unsqueeze(1)
+            lstm_chunk_out1 = lstm_chunk_out1.unsqueeze(1)
+            lstm_chunk_out2 = lstm_chunk_out2.unsqueeze(1)
             
             if cnn_out is None:
                 cnn_out = cnn_chunk_out
-                lstm_out = lstm_chunk_out 
+                lstm_out1 = lstm_chunk_out1
+                lstm_out2 = lstm_chunk_out2
             else:
                 cnn_out = torch.cat([cnn_out, cnn_chunk_out], dim=1)
-                lstm_out = torch.cat([lstm_out, lstm_chunk_out], dim=1)
+                lstm_out1 = torch.cat([lstm_out1, lstm_chunk_out1], dim=1)
+                lstm_out2 = torch.cat([lstm_out2, lstm_chunk_out2], dim=1)
 
         # out1, out2 = self.rnn2(cnn_out)
-        out1 = self.dropout(F.elu(self.fc1(lstm_out)))
-        out2 = self.dropout(F.elu(self.fc2(cnn_out)))
+        en_out = torch.cat([cnn_out, lstm_out1], dim=-1)
+        jv_out = torch.cat([cnn_out, lstm_out2], dim=-1)
+        out1 = self.dropout(F.elu(self.fc1(en_out)))
+        out2 = self.dropout(F.elu(self.fc2(jv_out)))
         out = torch.cat([self.fc3(out1.view(out1.shape[0], -1)), 
                          self.fc4(out2.view(out2.shape[0], -1))], dim=1)
         return self.sigmoid(out)
