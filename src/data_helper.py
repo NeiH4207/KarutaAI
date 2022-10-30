@@ -160,7 +160,7 @@ def preprocess3(datasetpath, original_label_file_path, dumppath, data_config):
         with open(dumppath, 'wb') as fp:
             pickle.dump(dataset, fp)
 
-def plot(y, sr):
+def plot(y):
     plt.figure(figsize=(10, 4))
     librosa.display.specshow(y, fmax=8000, x_axis='time')
     plt.colorbar(format='%+2.0f')
@@ -168,7 +168,6 @@ def plot(y, sr):
     plt.show()
 
 def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
-    # print(audio.shape)
     y = librosa.util.fix_length(audio, size=int(required_audio_size  * sr))
     mfcc = librosa.feature.mfcc(
         y=y, sr=sr, n_fft = data_config['n_fft'],
@@ -179,35 +178,36 @@ def audio_to_tensor(audio, sr, data_config, required_audio_size=5):
         y=y, sr=sr, hop_length=data_config['hop_length']
     )
 
-    chroma = librosa.feature.chroma_stft(y=y, sr=sr, 
-                                            n_chroma=data_config['num_chroma'],
-                                            hop_length=data_config['hop_length'])
+    chroma = librosa.feature.chroma_stft(y=y,
+                                         sr=sr,  
+                                         n_chroma=data_config['num_chroma'], 
+                                         hop_length=data_config['hop_length'])
     
-    # mel = librosa.feature.melspectrogram(y=y, sr=sr,
-    #                                         hop_length=data_config['hop_length'])
-
+    oenv = librosa.onset.onset_strength(y=y, 
+                                        sr=sr, 
+                                        hop_length=data_config['hop_length'])
+    
+    tempogram = librosa.feature.fourier_tempogram(onset_envelope=oenv, sr=sr,
+                                                    win_length=32,
+                                                    hop_length=data_config['hop_length'])
+    tempogram = np.abs(tempogram[:, -1])
     spectral_contrast = librosa.feature.spectral_contrast(
         y=y, sr=sr, hop_length=data_config['hop_length']
     )
     data = np.zeros(
         (data_config['timeseries_length'],
-         8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
+         17 + 8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
     )
+    order_sizes = [0, data_config['num_mfcc'], 7, 1, 17,  data_config['num_chroma']]
+    cumsum_sizes = np.cumsum(order_sizes)
+    order_features = [mfcc, spectral_contrast, spectral_center, tempogram, chroma]
     
-    data[:, 0:data_config['num_mfcc']] = \
-        mfcc.T[0:data_config['timeseries_length'], :]
-        
-    data[:, data_config['num_mfcc']:data_config['num_mfcc']+1] = \
-        spectral_center.T[0:data_config['timeseries_length'], :]
-        
-    data[:, data_config['num_mfcc'] + 1:data_config['num_mfcc']+data_config['num_chroma']+1] = \
-        chroma.T[0:data_config['timeseries_length']+data_config['num_chroma']+1, :]
-        
-    data[:, data_config['num_mfcc']+data_config['num_chroma']+1:] = \
-        spectral_contrast.T[0:data_config['timeseries_length'], :]
+    for i in range(len(order_features)):
+        data[:, cumsum_sizes[i]:cumsum_sizes[i+1]] = order_features[i].T
+    
     return data
 
-def preprocess(datasetpath, dumppath, data_config):
+def preprocess(datasetpath, dumppath, data_config, n_skips=0):
     # datapath = os.path.join(datasetpath, 'data')
     labelpath = os.path.join(datasetpath, 'label')
     data_filenames = sorted(gather_files_from_folder(datasetpath, '.wav'))
@@ -215,11 +215,12 @@ def preprocess(datasetpath, dumppath, data_config):
     
     data = np.zeros(
         (data_config['batch-length'], data_config['timeseries_length'],
-         8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
+         8 + 17 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
     )
     target = []
     
-    for i, data_filename in tqdm(enumerate(data_filenames)):
+    for i, data_filename in tqdm(enumerate(
+                data_filenames[n_skips * data_config['batch-length']:])):
         sample_name = get_filename(data_filename)
         label_filename = os.path.join(labelpath, sample_name + '.txt')
         if label_filename not in label_filenames:
@@ -247,7 +248,7 @@ def preprocess(datasetpath, dumppath, data_config):
                     pickle.dump(dataset, fp)
             data = np.zeros(
                 (data_config['batch-length'], data_config['timeseries_length'],
-                8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
+                8 + 17 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
             )
             target = []
         

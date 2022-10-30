@@ -43,14 +43,15 @@ def main():
 
     data_config = {
         'batch-length': 32768,
-        'num_mfcc': 64,
+        'num_mfcc': 39,
         'num_chroma': 64,
         'n_fft': 2048,
         'hop_length': 512,
-        'timeseries_length': 235,
         'sr': 48000,
         'fixed-time': 2.5
     }
+    data_config['timeseries_length'] = int(1 + \
+        (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
 
     preprocess(args.val_folder, os.path.join(
         args.processed_data_path, 'val'), data_config)
