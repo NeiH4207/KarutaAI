@@ -75,18 +75,20 @@ class CNN(nn.Module):
 
             cnn.add_module(
                 f'pooling_{i}',
-                nn.MaxPool2d(kernel_size=self.pool_kernels[i])
+                (nn.MaxPool2d(kernel_size=self.pool_kernels[i]) 
+                    if i%2==0 else nn.AvgPool2d(kernel_size=self.pool_kernels[i])
+                )
             )
 
         # input_shape = (batch, 1, 235, 136)
         add_block(0, batch_normalization=True)  # (batch, 64, _, _)
-        cnn.add_module('dropout_0', nn.Dropout2d(0.4))
+        cnn.add_module('dropout_0', nn.Dropout2d(0.7))
         add_block(1, batch_normalization=True)  # (batch, 128, _, _)
-        cnn.add_module('dropout_1', nn.Dropout2d(0.3))
+        cnn.add_module('dropout_1', nn.Dropout2d(0.5))
         add_block(2, batch_normalization=True)  # (batch, 128, _, _)
-        cnn.add_module('dropout_2', nn.Dropout2d(0.2))
+        cnn.add_module('dropout_2', nn.Dropout2d(0.5))
         add_block(3, batch_normalization=True)  # (batch, 128, _, _)
-        cnn.add_module('dropout_3', nn.Dropout2d(0.1))
+        cnn.add_module('dropout_3', nn.Dropout2d(0.3))
 
         self.cnn = cnn
         self.device = device
@@ -163,11 +165,11 @@ class ARCNN(NNet):
         )
         
         self.fc1 = nn.Linear(self.rnn_hidden_size * 3 
-                             + self.cnn_out_size, 512)
+                             + self.cnn_out_size, 1024)
         self.fc2 = nn.Linear(self.rnn_hidden_size * 3 
-                             + self.cnn_out_size, 512)
-        self.fc3 = nn.Linear(512 * self.num_chunks, num_classes // 2)
-        self.fc4 = nn.Linear(512 * self.num_chunks, num_classes // 2)
+                             + self.cnn_out_size, 1024)
+        self.fc3 = nn.Linear(1024 * self.num_chunks, num_classes // 2)
+        self.fc4 = nn.Linear(1024 * self.num_chunks, num_classes // 2)
 
         self.dropout = nn.Dropout(dropout)
         self.sigmoid = nn.Sigmoid()
