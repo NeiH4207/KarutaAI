@@ -1,4 +1,9 @@
 class Karuta():
 
     def __init__(self):
-        pass
+        self.tournament = None
+        self.round = None
+        self.question = None
+        
+    def play(self):
+        return
