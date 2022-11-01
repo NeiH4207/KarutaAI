@@ -1,3 +1,4 @@
+from random import random
 import wave
 import os
 import sys
@@ -30,7 +31,7 @@ def get_wav_channel(fn, channel):
     return ch_data, typ, wav.getparams()
 
 
-def save(output_data, params, outputchannels, ofn):
+def save_wave(output_data, params, outputchannels, ofn):
     outwav = wave.open(ofn, 'w')
     outwav.setparams(params)
     outwav.setnchannels(1)
@@ -49,18 +50,19 @@ def combine_waves(frames, typ, params, output_fn=None, outputchannels=None):
     for i in range(1, len(samples)):
         mix += samples[i][:min_len]
 
-    save(mix, params, 1, output_fn)
+    save_wave(mix, params, 1, output_fn)
 
 
-def split_wav_by_time(wav_data, params, time_interval=1.0, num_samples=1):
+def split_wav_by_time(wav_data, params, time_range=(0.0, 1.0), num_samples=1):
+    time_interval = random() * (time_range[1] - time_range[0]) + time_range[0]
     wav_len = wav_data.shape[0]
     seconds = wav_len / params.framerate
     sample_len = min(wav_len, int(time_interval / seconds * wav_len))
     min_offset = 4800
     start_idx = [x for x in range(
-        0, min(wav_len, sample_len) // min_offset)]
+        0, wav_len // min_offset)]
     start_idx = [idx * min_offset for idx in start_idx]
-    samples = [wav_data[start_idx:start_idx+sample_len]
+    samples = [wav_data[start_idx:start_idx+int((random() *(time_range[1] - time_range[0]) + time_range[0]) / seconds * wav_len)]
                for start_idx in start_idx]
     return samples
 
