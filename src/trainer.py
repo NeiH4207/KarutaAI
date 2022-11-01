@@ -99,7 +99,7 @@ class Trainer:
         self.model.eval()
         #Going through each data_filename within a label
         audio, sr = librosa.load(audio_file_path, sr=data_config['sr'])
-        data = audio_to_tensor(audio, sr, data_config, data_config['fixed-time'])
+        data = audio_to_tensor(audio, data_config)
     
         
         inp = Variable(torch.FloatTensor(np.array([data])).to(self.device), requires_grad=False)
@@ -111,10 +111,13 @@ class Trainer:
             ax = sns.barplot(x='labels', y='probability',
                              data=df, errwidth=0)
             plt.xticks(color='w')
+            plt.savefig('images/' + 
+                        os.path.basename(audio_file_path).replace('wav', 'png'))
             plt.show()
         ans = labels[np.argsort(prob_out)[::-1]][:k]
         strans = '[' + ", ".join(['"%s"' % x for x in ans]) + ']'
         print(strans)
+        
 
     def train(self, optimizer='adam', training_params=None):
         # utility for running the training process
@@ -131,12 +134,13 @@ class Trainer:
 
         self.model.train()
         # scheduler = ReduceLROnPlateau(self.model.optimizer, factor=0.5, patience=0, verbose=True)
-        train_loader = self.split_batch(
-            self.train_x, self.train_y, batch_size=batch_size, shuffle=True)
+
         val_loader = self.split_batch(
             self.val_x, self.val_y, batch_size=batch_size, shuffle=False)
 
         for i in range(epochs):
+            train_loader = self.split_batch(
+                self.train_x, self.train_y, batch_size=batch_size, shuffle=True)
             t = tqdm(train_loader)
             tot_loss = 0
             counter = 0
@@ -160,7 +164,7 @@ class Trainer:
             val_loss, val_acc = self.eval(val_loader)
 
             if self.verbose:
-                print('Epoch: {}/{}'.format(i + 1, epochs))
+                print('Epoch/batch: {}/{}'.format(i + 1, epochs))
                 print('Val accuracy:', val_acc)
                 print('Val loss:', val_loss)
             if val_loss <= self.valid_loss_min:
