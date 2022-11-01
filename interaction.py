@@ -4,16 +4,14 @@ import os
 import numpy as np
 from src.request import Socket
 from src.karuta import Karuta
+from models.arcnn import ARCNN
+import torch
 import warnings
+import librosa
+from configs import wavConfig
+from libraries.voice import save_wave, get_wav_channel
+from src.predictor import Predictor
 warnings.filterwarnings("ignore")
-
-'''
-python3 interaction.py \
-    -s 'Computer_Tour' -r Computer_Round -p 'r' \
-         --token '' \
-              -m Natural_8
-'''
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -21,26 +19,33 @@ def parse_args():
     parser.add_argument("--output-path", type=str,
                         default="./output/recovered_images/")
     parser.add_argument("--token", type=str,
-                        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsIm5hbWUiOiLEkOG6oWkgaOG7jWMgQsOhY2gga2hvYSBIw6AgTuG7mWkiLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTY2MzkxMTE0NX0.YT_wXy1Rx3YFKI57QXZvR7Mrd9lvKSmTlvm7padHd5M"
+                        default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsIm5hbWUiOiLEkOG6oWkgaOG7jWMgQsOhY2gga2hvYSBIw6AgTuG7mWkiLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTY2NjUxODM5Nn0.WJTZuzGlphQzudXQLTM4Pz6SQnoQWgdZC-E_ADCB_yw"
                         )
     parser.add_argument("-s", "--tournament_name",
                         type=str, default='Procon2022')
     parser.add_argument("-r", "--round_name", type=str, default='Round1')
     parser.add_argument("-m", "--match_name", type=str, default='Tran1')
-    parser.add_argument("-q", "--question_name", type=str, default='Q_3')
+    parser.add_argument("-q", "--question_name", type=str, default='Q_20')
+    parser.add_argument("-n", "--n-parts", type=int, default=4)
     parser.add_argument("-a", "--answer_id", type=str, default=None)
     parser.add_argument("-p", "--mode", type=str, default='r')
+    
+    parser.add_argument('--model-file-path', type=str, 
+                        default='trained_models/RCNN2/model.pt')
+    parser.add_argument('--cpu', action='store_true',
+                        help='Use cpu cores instead')
     args = parser.parse_args()
     return args
 
 
 def read(socket: Socket, tournament_name, round_name,
-         match_name, question_name, part):
+         match_name, question_name, n_parts):
     tournaments = socket.get_tournament()
     tournament_id = None
     round_id = None
     match_id = None
     question_id = None
+    game_info = Karuta()
 
     for tournament in tournaments['data']:
         if tournament['name'] == tournament_name:
@@ -86,11 +91,14 @@ def read(socket: Socket, tournament_name, round_name,
         return None
 
     question_info = socket.get_question(question_id)
-    audio = socket.get_div_audio(question_id, part)
-
-    print('Read Match sucessful')
-
-    game_info = Karuta()
+    durations, indexes = socket.post_div_audio(question_id, n_parts)
+    print("Numparts: {}".format(len(durations)))
+    question_info['durations'] = durations
+    question_info['indexes'] = indexes
+    game_info.tournament = tournament_info
+    game_info.round = round_info
+    game_info.question = question_info
+    game_info.question['question_data'] = json.loads(game_info.question['question_data'])
     return game_info
 
 
@@ -103,35 +111,57 @@ def main():
     answer_id = args.answer_id
     args = parse_args()
     socket = Socket(args.token)
-    if args.mode == 'r':
-        game_info = read(socket, tournament_name, round_name,
-                         match_name, question_name, 1)
+    game_info = read(socket, tournament_name, round_name, 
+                     match_name, question_name, args.n_parts)
+    _, _, params = get_wav_channel('data/sample_Q_202205/sample_Q_E01/problem1.wav', 0)
+    if args.cpu:
+        device = 'cpu'
     else:
-        game_info = read(socket, tournament_name, round_name,
-                         match_name, question_name)
-    if args.mode == 'r':
-        game_info = read(socket, tournament_name, round_name,
-                         match_name, question_name)
-        game_info.save_to_json()
-    elif args.mode == 'w':
-        file_path = os.path.join(args.sol_path, args.match_name + '.txt')
-        f = open(file_path, 'r')
-        lines = f.readlines()
-        lines = [line.replace('\n', '') for line in lines]
-        data_text = '\n'.join(lines)
-        data_text = data_text.encode('utf-8')
-        res = socket.send(challenge_id=game_info.challenge_id,
-                          data_text=data_text)
-        print(res)
-    elif args.mode == 'show':
-        solution = socket.get_answer(id=answer_id)
-        print(json.dumps(solution, indent=1))
-    elif args.mode == 'del':
-        res = socket.del_all_answer(challenge_id=game_info.challenge_id)
-        print(res)
-    else:
-        print('mode invalid, please use -m w or -m r')
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    data_config = {
+        'num_mfcc': 39,
+        'num_chroma': 64,
+        'n_fft': 2048,
+        'hop_length': 512,
+        'sr': 48000,
+        'fixed-time': 2.5
+    }
+    data_config['timeseries_length'] = int(1 + \
+        (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
 
+    model = ARCNN(
+        input_shape=(data_config['timeseries_length'], 128),
+        num_chunks= 4,
+        in_channels=1,
+        rnn_hidden_size=512,
+        rnn_num_layers=2,
+        num_classes=88, 
+        device=device
+    )
+    predictor = Predictor(model, device=device)
+    predictor.load_model_from_path(args.model_file_path)
+    
+    probs = []
+    
+    for id in np.argsort(game_info.question['durations'])[::-1]:
+        part = game_info.question['indexes'][id]
+        audio = socket.get_div_audio(game_info.question['id'], part)
+        # audio = audio[1000:]
+        audio_save_path = 'audio/question_{}_{}.wav'.\
+                                    format(game_info.question['id'], part)
+        # save_wave(audio, params, 1, audio_save_path)
+        save_fig_path = audio_save_path.replace('.wav', '.png')
+        prob_out, labels = predictor.predict(audio_save_path, data_config,
+                k=88, plot=False, 
+                question_id=game_info.question['id'],
+                save_path=save_fig_path)
+        probs.append(np.log(prob_out))
+        
+        prob_mean = np.mean(probs, axis=0)
+        # predictor.plot_prob(np.exp(prob_mean), labels, 'audio/question_{}.png'.\
+        #                             format(game_info.question['id']))
+        print(labels[np.argsort(np.exp(prob_mean))[::-1]][:game_info.question['question_data']['n_cards']])
 
 if __name__ == '__main__':
     main()
