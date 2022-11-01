@@ -4,7 +4,7 @@ import numpy as np
 # from src.data_helper import DataProcessor
 
 # TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjQ1OTU2MzYyLCJleHAiOjE2NDU5NzQzNjJ9.a_O5bxFBlPZZRamp5XaiLlxcH7dLbWoHlhP7cZGehGA'
-END_POINT_API = 'http://procon2022.duckdns.org'
+END_POINT_API = 'https://procon2022.duckdns.org'
 
 class Socket:
     def __init__(self, token):
@@ -56,11 +56,14 @@ class Socket:
     def post_div_audio(self, id, n_parts):
         url = END_POINT_API + '/question/{}/divided-data'.format(id)
         body = {
-            'n_divided': n_parts
+            "n_divided": n_parts
         }
-        response = requests.post(url, headers=self.headers, json=body, verify=False)
-        sdata = response.content
-        return sdata
+        response = requests.post(url, headers=self.headers, 
+                                 json=body, verify=False)
+        sdata = response.json()['data']
+        durations = [x['duration'] for x in sdata]
+        indexes = [x['index'] for x in sdata]
+        return [durations, indexes]
     
     def get_div_audio(self, id, part):
         url = END_POINT_API + '/question/{}/audio/divided-data?index={}'.format(id, part)
@@ -68,7 +71,10 @@ class Socket:
         sdata = response.content
         typ = { 1: np.uint8, 2: np.uint16, 4: np.uint32 }.get(2)
         print ("Extracting channel {} out of {} channels, {}-bit depth".format(0+1, 1, 2*8))
-        data = np.frombuffer(sdata, dtype=typ)
+        data = np.frombuffer(sdata.split(b'data')[1][4:], dtype=typ)
+        with open('sample.wav', 'wb') as f:
+            f.write(sdata)
+            f.close()
         return data
     
     def get_audio_data(self, id=None):
