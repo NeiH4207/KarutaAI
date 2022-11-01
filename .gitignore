@@ -7,6 +7,8 @@ generated_data/*
 trainned_models/
 trained_models/
 transformed/
+audio/*
+images/*
 *workspace*
 # Byte-compiled / optimized / DLL files
 __pycache__/

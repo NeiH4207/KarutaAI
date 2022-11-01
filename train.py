@@ -1,5 +1,6 @@
 import argparse
 import os
+from random import shuffle
 import numpy as np
 from src.data_helper import load_data, preprocess
 from models.lstm import CLSTM, CNN
@@ -18,7 +19,7 @@ def parse_args():
     parser.add_argument('--model-path', type=str, default='./trained_models"')
 
     parser.add_argument('-d', '--model-save-dir', type=str,
-                        default='trained_models/CNN/',
+                        default='trained_models/LSTM3/',
                         help='directory to save model')
 
     # Model hyper-parameters
@@ -98,11 +99,16 @@ def main():
         args.datasetpath, 'train'), _extension='.pickle')
 
     for _ in range(1000):
+        batch_names = gather_files_from_folder(os.path.join(
+            args.datasetpath, 'train'), _extension='.pickle')
+        shuffle(batch_names)
         for trainpath in batch_names:
+            print("training batch on:", trainpath)
             x_train, y_train = load_data(trainpath)
             trainer.set_data(x_train, y_train, x_val, y_val)
             trainer.train(optimizer=args.optimizer,
                           training_params=training_params, )
+            x_train, y_train = None, None
 
 
 if __name__ == "__main__":
