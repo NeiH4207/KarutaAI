@@ -18,7 +18,7 @@ def parser_args():
                         default=327680)
     parser.add_argument('--num_mixed', type=int,
                         help='the max number of mixed readers',
-                        default=10)
+                        default=15)
     parser.add_argument('--num_segs', type=int,
                         help='the random segments readers',
                         default=30)
@@ -30,7 +30,7 @@ def parser_args():
                         default=2.5)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/max10/train')
+                        default='generated_data/max15/train/')
     return parser.parse_args()
 
 
@@ -59,15 +59,12 @@ def main():
         data, typ, params = get_wav_channel(fn, chns[idx][0])
         wav_data.append(data)
         channels.append(params.nchannels)
-        time_interval = random()*(args.max_time - args.min_time) / \
-            args.min_time + args.min_time
+        
         samples = split_wav_by_time(
-            data, params, time_interval=time_interval, num_samples=args.num_segs)
+            data, params, time_range=(args.min_time, args.max_time), num_samples=args.num_segs)
         all_samples.append(np.array(samples))
         all_labels.append(np.array([fn.split('/')[-1].split('.')[0]] * len(samples)))
 
-    # all_labels = np.array(all_labels, dtype=str)
-    # all_samples = np.array(all_samples, dtype=object)
     # shuffle samples
     gen_data_path = args.gen_data_path
     data_path = os.path.join(gen_data_path, 'data')
