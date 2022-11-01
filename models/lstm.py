@@ -39,7 +39,7 @@ class Encoder(nn.Module):
         self.conv4_out_len = (int((self.conv3_out_len - 3) / 2 + 1)) // 2
 
         self.linear_input = 12288
-        self.fc = nn.Linear(self.linear_input, ebbed_size).to(device)
+        self.fc = nn.Linear(self.linear_input, embed_size).to(device)
         self.fc_bn = nn.BatchNorm1d(embed_size).to(device)
 
     def forward(self, x):

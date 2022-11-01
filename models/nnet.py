@@ -8,7 +8,6 @@ from torch import optim
 import torch.nn as nn
 
 from AdasOptimizer.adasopt_pytorch import Adas
-from configs import model_configs
 
 
 class NNet(nn.Module):
@@ -77,35 +76,3 @@ class NNet(nn.Module):
 
     def step(self):
         self.optimizer.step()
-
-    def load_checkpoint(self, epoch, batch_idx):
-        checkpoint = torch.load("{}/{}_{}_{}.pt".format(model_configs.save_dir,
-                                self.name, epoch, batch_idx), map_location=self.device)
-        self.load_state_dict(checkpoint['state_dict'])
-        self.train_losses = checkpoint['train_loss']
-        self.optimizer = checkpoint['optimizer']
-        # self.load_state_dict(checkpoint)
-        print('-- Load model successful!')
-
-    def save_checkpoint(self, epoch, batch_idx):
-        torch.save({
-            'state_dict': self.state_dict(),
-            'train_loss': self.train_losses,
-            'optimizer': self.optimizer
-        }, "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx))
-
-    def save_train_losses(self, train_losses):
-        self.train_losses = train_losses
-
-    def save(self, epoch, batch_idx):
-        torch.save(self.state_dict(
-        ), "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx))
-        # print("Model saved")
-
-    def load(self, epoch, batch_idx, model_name=None):
-        if model_name is None:
-            self.load_state_dict(torch.load(
-                "{}/{}_{}_{}.pt".format(model_configs.save_dir, self.name, epoch, batch_idx)))
-        else:
-            self.load_state_dict(torch.load(
-                "{}/{}.pt".format(model_configs.save_dir, model_name)))
