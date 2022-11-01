@@ -2,25 +2,27 @@ import argparse
 from models.arcnn import ARCNN
 from models.lstm import CLSTM, CNN
 import torch
+from src.predictor import Predictor
 from src.trainer import Trainer
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # Dataset directory
-    parser.add_argument('--audio-file-path', type=str, 
+    parser.add_argument('-a', '--audio-file-path', type=str, 
                         default='data/Q03.wav',
                         help='audio file to training data')
     
-    parser.add_argument('--model-file-path', type=str, default='trainned_models/RCNN/model.pt')
+    parser.add_argument('--save-file-path', type=str, 
+                        default=None,
+                        help='audio file to training data')
     
-    parser.add_argument('-d', '--model-save-dir', type=str, 
-                        default='trained_models/',
-                        help='directory to save model')
+    parser.add_argument('--model-file-path', type=str, 
+                        default='trained_models/RCNN2/model.pt')
     
-    parser.add_argument('-k', type=int, default=3,
+    parser.add_argument('-k', type=int, default=20,
                         help='Num mixed readers')
     
-    parser.add_argument('--cpu', action='store_true',
+    parser.add_argument('--cpu', action='store_true', default=True,
                         help='Use cpu cores instead')
     
     parser.add_argument('--plot', action='store_true',
@@ -49,19 +51,11 @@ def main():
     data_config['timeseries_length'] = int(1 + \
         (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
 
-    
     # model = CLSTM(
-    #     input_size=136,
+    #     input_shape=(data_config['timeseries_length'], 128),
     #     hidden_size=512,
     #     num_layers=2,
-    #     num_classes=88, 
-    #     device=device
-    # )
-    
-    # model = CNN(
-    #     input_size=281,
-    #     embbed_size=1024,
-    #     num_classes=88, 
+    #     num_classes=88,
     #     device=device
     # )
     
@@ -74,13 +68,14 @@ def main():
         num_classes=88, 
         device=device
     )
-    # audio_file_path = 'data/sample_Q_202205/sample_Q_M01/problem1.wav'
-    trainer = Trainer(model, save_dir=args.model_save_dir, 
-                      save_name="model.pt", device=device, verbose=True)
-    trainer.load_model_from_path(args.model_file_path)
-    trainer.test(args.audio_file_path, 
-                 data_config=data_config, 
-                 k=args.k, plot=args.plot)
+
+    predictor = Predictor(model, device=device)
+    predictor.load_model_from_path(args.model_file_path)
+    prob_out, labels = predictor.predict(args.audio_file_path, data_config,
+        k=88, plot=True, 
+        question_id=0,
+        save_path=args.save_file_path)
+    print(labels[prob_out.argsort()[::-1]][:args.k])
     
 if __name__ == "__main__":
     main()
