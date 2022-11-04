@@ -1,3 +1,4 @@
+import json
 import requests
 import base64
 import numpy as np
@@ -84,11 +85,47 @@ class Socket:
         response = requests.get(url, headers=self.headers, verify=False)
         return response
     
-    def get_all_answer_info(self, challenge_id=None):
-        url = END_POINT_API + '/solution/team/{}'.format(challenge_id)
+    def get_all_answer_info(self, question_id=None):
+        url = END_POINT_API + '/answer'
         response = requests.get(url, headers=self.headers, verify=False)
+        if question_id is not None:
+            for answer in response.json()['data']:
+                if answer['question_id'] == question_id:
+                    return answer
+        return None
+    
+    def post_answer(self, team_id, match_id, question_id, answer_data):
+        url = END_POINT_API + '/answer'
+        body = {
+            "answer_data": answer_data,
+            "question_id": question_id,
+            "team_id": team_id,
+            "match_id": match_id
+        }
+        response = requests.post(url, headers=self.headers, 
+                                 json=body, verify=False)
         return response.json()
     
+    def edit_answer(self, ans_id, answer_data):
+        url = END_POINT_API + '/answer/{}'.format(ans_id)
+        body = {
+            "answer_data": answer_data
+        }
+        response = requests.put(url, headers=self.headers, 
+                                 json=body, verify=False)
+        return response.json()
+    
+    def submit(self, team_id, match_id, question_id, answer_data, not_check=False):    
+        answer_info = self.get_all_answer_info(question_id)
+        if answer_info == None:
+            self.post_answer(team_id, match_id, question_id, answer_data)
+        else:
+            score_data = json.loads(answer_info['score_data'])['score_data']
+            self.edit_answer(answer_info['id'], answer_data)
+        answer_info = self.get_all_answer_info(question_id)
+        score_data = json.loads(answer_info['score_data'])['score_data']
+        return score_data['correct'], score_data['changed']
+        
     def del_all_answer(self, challenge_id=None):
         url = END_POINT_API + '/solution/delete/{}'.format(challenge_id)
         response = requests.delete(url, headers=self.headers, verify=False)
