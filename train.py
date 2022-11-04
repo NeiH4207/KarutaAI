@@ -58,29 +58,23 @@ def main():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # model = CLSTM(
-    #     input_size=x_val[0].shape[1],
-    #     hidden_size=512,
-    #     num_layers=2,
-    #     num_classes=88,
-    #     device=device
-    # )
-    
-    # model = CNN(
-    #     input_size=x_val[0].shape[1],
-    #     embed_size=1024,
-    #     num_classes=88,
-    #     device=device
-    # )
-    model = ARCNN(
-        input_shape=x_val[0].shape,
-        num_chunks= 4,
-        in_channels=1,
-        rnn_hidden_size=512,
-        rnn_num_layers=2,
-        num_classes=88, 
+    model = CLSTM(
+        input_size=x_val[0].shape[1],
+        hidden_size=512,
+        num_layers=2,
+        num_classes=88,
         device=device
     )
+    
+    # model = ARCNN(
+    #     input_shape=x_val[0].shape,
+    #     num_chunks= 4,
+    #     in_channels=1,
+    #     rnn_hidden_size=512,
+    #     rnn_num_layers=2,
+    #     num_classes=88, 
+    #     device=device
+    # )
 
     training_params = {
         'loss_function': args.loss,

@@ -121,12 +121,12 @@ def load_data(data_path):
         print('Not found dataset in', data_path)
         return None, None
         
-    print("Data loading ...\n")
+    print("Data loading ...")
     with open(data_path, "rb") as fp:
         data = pickle.load(fp)
     x = np.array(data["data"])
     y = np.array(data["target"])
-    print("Loaded Data")
+    print("Loaded Data\n")
     return x, y
 
 if __name__ == "__main__":

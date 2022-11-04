@@ -123,11 +123,11 @@ class ARCNN(NNet):
         self.n_cnn_layers = 4
         self.device = device
         self.window_length = ((( self.input_shape[0] - 1) // self.num_chunks) + 1)
-        conv_kernels = [(3, 3), (3, 3), (3, 3), (3, 3)]
-        paddings = [(0, 1), (0, 1), (0, 0), (0, 0)]
-        strides = [(1, 1), (1, 1), (1, 1), (1, 1)]
+        conv_kernels = [(5, 3), (3, 3), (3, 3), (3, 3)]
+        paddings = [(0, 1), (0, 0), (0, 0), (0, 0)]
+        strides = [(2, 1), (1, 1), (1, 1), (1, 1)]
         channels = [64, 128, 256, 512]
-        pool_kernels = [(2, 2), (2, 2), (2, 2), (2, 2)]
+        pool_kernels = [(2, 2), (2, 2), (1, 1), (1, 1)]
 
         def cal_cnn_out(h, w):
             for i in range(self.n_cnn_layers):
@@ -164,10 +164,10 @@ class ARCNN(NNet):
             device = self.device
         )
         
-        self.fc1 = nn.Linear(self.rnn_hidden_size * 3 
-                             + self.cnn_out_size, 1024)
-        self.fc2 = nn.Linear(self.rnn_hidden_size * 3 
-                             + self.cnn_out_size, 1024)
+        self.fc1 = nn.Linear(self.rnn_hidden_size
+                             + self.cnn_out_size * 2, 1024)
+        self.fc2 = nn.Linear(self.rnn_hidden_size
+                             + self.cnn_out_size * 2, 1024)
         self.fc3 = nn.Linear(1024 * self.num_chunks, num_classes // 2)
         self.fc4 = nn.Linear(1024 * self.num_chunks, num_classes // 2)
 
