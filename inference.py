@@ -9,7 +9,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     # Dataset directory
     parser.add_argument('-a', '--audio-file-path', type=str, 
-                        default='data/Q03.wav',
+                        default='data/Q20.wav',
                         help='audio file to training data')
     
     parser.add_argument('--save-file-path', type=str, 
@@ -17,7 +17,7 @@ def parse_args():
                         help='audio file to training data')
     
     parser.add_argument('--model-file-path', type=str, 
-                        default='trained_models/RCNN2/model.pt')
+                        default='trainned_models/LSTM3/model.pt')
     
     parser.add_argument('-k', type=int, default=20,
                         help='Num mixed readers')
@@ -51,23 +51,23 @@ def main():
     data_config['timeseries_length'] = int(1 + \
         (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
 
-    # model = CLSTM(
-    #     input_shape=(data_config['timeseries_length'], 128),
-    #     hidden_size=512,
-    #     num_layers=2,
-    #     num_classes=88,
-    #     device=device
-    # )
-    
-    model = ARCNN(
-        input_shape=(data_config['timeseries_length'], 128),
-        num_chunks= 4,
-        in_channels=1,
-        rnn_hidden_size=512,
-        rnn_num_layers=2,
-        num_classes=88, 
+    model = CLSTM(
+        input_size=128,
+        hidden_size=512,
+        num_layers=2,
+        num_classes=88,
         device=device
     )
+    
+    # model = ARCNN(
+    #     input_shape=(data_config['timeseries_length'], 128),
+    #     num_chunks= 4,
+    #     in_channels=1,
+    #     rnn_hidden_size=512,
+    #     rnn_num_layers=2,
+    #     num_classes=88, 
+    #     device=device
+    # )
 
     predictor = Predictor(model, device=device)
     predictor.load_model_from_path(args.model_file_path)
@@ -75,7 +75,7 @@ def main():
         k=88, plot=True, 
         question_id=0,
         save_path=args.save_file_path)
-    print(labels[prob_out.argsort()[::-1]][:args.k])
+    print(str(labels[prob_out.argsort()[::-1]][:args.k]).replace(' ', ', ').replace('\'', '\"'))
     
 if __name__ == "__main__":
     main()
