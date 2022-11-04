@@ -1,10 +1,7 @@
 from random import random
 import wave
 import os
-import sys
 import numpy as np
-from pydub import AudioSegment
-
 
 def get_wav_channel(fn, channel):
     '''
@@ -62,8 +59,9 @@ def split_wav_by_time(wav_data, params, time_range=(0.0, 1.0), num_samples=1):
     start_idx = [x for x in range(
         0, wav_len // min_offset)]
     start_idx = [idx * min_offset for idx in start_idx]
-    samples = [wav_data[start_idx:start_idx+int((random() *(time_range[1] - time_range[0]) + time_range[0]) / seconds * wav_len)]
-               for start_idx in start_idx]
+    samples = [wav_data[start_idx:start_idx+int((random() * \
+                (time_range[1] - time_range[0]) + time_range[0]) / seconds * wav_len)]
+                    for start_idx in start_idx]
     return samples
 
 

@@ -24,7 +24,6 @@ setup(
         'torchsummary==1.5.1',
         'scikit-learn==1.0.2',
         'seaborn==0.11.2',
-        'pydub==0.25.1',
         'librosa==0.9.2'
     ],
     python_requires='>=3.8',
