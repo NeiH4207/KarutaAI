@@ -1,9 +1,10 @@
 import argparse
 import os
-from random import shuffle
+from random import seed, shuffle
 import numpy as np
+from models.alstm import ALSTM
 from src.data_helper import load_data, preprocess
-from models.lstm import CLSTM, CNN
+from models.lstm import CLSTM
 from models.rcnn import RCNN
 from models.arcnn import ARCNN
 import torch
@@ -15,11 +16,11 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--datasetpath', type=str,
-                        default='transformed/max10/')
+                        default='transformed/128_max20/')
     parser.add_argument('--model-path', type=str, default='./trained_models"')
 
     parser.add_argument('-d', '--model-save-dir', type=str,
-                        default='trained_models/LSTM3/',
+                        default='trained_models/LSTM6/',
                         help='directory to save model')
 
     # Model hyper-parameters
@@ -53,20 +54,25 @@ def parse_args():
 
 def main():
     args = parse_args()
-    x_val, y_val = load_data(os.path.join(
-        args.datasetpath, 'val', 'dataset_batch_0.pickle'))
-
+    try:
+        x_val, y_val = load_data(os.path.join(
+            args.datasetpath, 'val', 'dataset_batch_0.pickle'))
+        if x_val is None:
+            print('Wrong dataset')
+            return
+    except:
+        return
     device = "cuda" if torch.cuda.is_available() else "cpu"
-
+    seed(args.seed)
     model = CLSTM(
-        input_size=x_val[0].shape[1],
+        input_size=128,
         hidden_size=512,
         num_layers=2,
         num_classes=88,
         device=device
     )
     
-    # model = ARCNN(
+    # model = ALSTM(
     #     input_shape=x_val[0].shape,
     #     num_chunks= 4,
     #     in_channels=1,
@@ -102,8 +108,8 @@ def main():
             trainer.set_data(x_train, y_train, x_val, y_val)
             trainer.train(optimizer=args.optimizer,
                           training_params=training_params, )
-            x_train, y_train = None, None
-
+            del x_train, y_train
+            trainer.free()
 
 if __name__ == "__main__":
     main()

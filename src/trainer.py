@@ -49,6 +49,12 @@ class Trainer:
         self.train_y = train_y
         self.val_x = val_x
         self.val_y = val_y
+        
+    def free(self):
+        del self.train_x, self.train_y
+        
+    def free_all(self):
+        del self.train_x, self.train_y, self.val_x, self.val_y
 
     def split_batch(self, x, y, batch_size, shuffle=True):
         batches = []
@@ -133,7 +139,7 @@ class Trainer:
         clip = 5
 
         self.model.train()
-        # scheduler = ReduceLROnPlateau(self.model.optimizer, factor=0.5, patience=0, verbose=True)
+        scheduler = ReduceLROnPlateau(self.model.optimizer, factor=0.5, patience=10, verbose=True)
 
         val_loader = self.split_batch(
             self.val_x, self.val_y, batch_size=batch_size, shuffle=False)
@@ -175,7 +181,7 @@ class Trainer:
             elif val_acc > self.valid_acc_max:
                 self.valid_acc_max = val_acc
                 torch.save(self.model.state_dict(), self.model_path)
-            # scheduler.step(val_loss)
+            scheduler.step(val_loss)
 
         return (self.model)
 

@@ -10,11 +10,11 @@ def parse_args():
                         help='path to training data')
 
     parser.add_argument('--val-folder', type=str,
-                        default='generated_data/max15/val',
+                        default='generated_data/max20/val',
 
                         help='path to training data')
     parser.add_argument('--test-folder', type=str,
-                        default='generated_data/max15/test',
+                        default='generated_data/max20/test',
                         help='path to training data')
 
     parser.add_argument('--original-label-data-path', type=str,
@@ -22,7 +22,7 @@ def parse_args():
                         help='')
 
     parser.add_argument('--processed-data-path', type=str,
-                        default='transformed/max15/',
+                        default='transformed/128_max20/',
                         help='')
 
     parser.add_argument('--seed', type=int, default=233,
@@ -46,11 +46,11 @@ def main():
         'num_mfcc': 39,
         'num_chroma': 64,
         'n_fft': 2048,
-        'hop_length': 512,
+        'hop_length': 128,
         'sr': 48000,
-        'fixed-time': 2.5
+        'fixed-time': 1.0
     }
-    data_config['timeseries_length'] = int(1 + \
+    data_config['timeseries_length'] = 2 + int(\
         (data_config['fixed-time'] * data_config['sr'] - 1) // data_config['hop_length'])
 
     preprocess(args.val_folder, os.path.join(

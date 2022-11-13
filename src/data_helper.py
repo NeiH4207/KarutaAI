@@ -28,7 +28,7 @@ def plot(y):
     plt.show()
 
 def audio_to_tensor(audio, data_config):
-    audio = audio.astype(np.float32)[-25248:]
+    audio = audio.astype(np.float32)
     sr = data_config['sr']
     fixed_size = int(sr * data_config['fixed-time'])
     y = librosa.util.fix_length(audio, size=fixed_size)
@@ -55,7 +55,7 @@ def audio_to_tensor(audio, data_config):
     tempogram = librosa.feature.fourier_tempogram(onset_envelope=oenv, sr=sr,
                                                     win_length=32,
                                                     hop_length=data_config['hop_length'])
-    tempogram = np.abs(tempogram[:, -1])
+    tempogram = np.abs(tempogram[:, :-1])
     spectral_contrast = librosa.feature.spectral_contrast(
         y=y, sr=sr, hop_length=data_config['hop_length']
     )
@@ -107,7 +107,7 @@ def preprocess(datasetpath, dumppath, data_config, n_skips=0):
                 if not os.path.exists(dumppath):
                     os.makedirs(dumppath)
                 _dumppath = os.path.join(dumppath, 'dataset_batch_{}.pickle'.\
-                    format(int((i + 1) / data_config['batch-length'])))
+                    format(int((i + 1 + n_skips) / data_config['batch-length'])))
                 with open(_dumppath, 'wb') as fp:
                     pickle.dump(dataset, fp)
             data = np.zeros(
@@ -124,6 +124,7 @@ def load_data(data_path):
     print("Data loading ...")
     with open(data_path, "rb") as fp:
         data = pickle.load(fp)
+        fp.close()
     x = np.array(data["data"])
     y = np.array(data["target"])
     print("Loaded Data\n")

@@ -18,6 +18,12 @@ class Predictor:
     def __init__(self, model, device=T.device("cpu")):
         self.model = model
         self.device = device
+        
+        self.labels = np.array(['E' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)]
+                          + ['J' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)])
+    
+    def get_labels(self):
+        return self.labels
     
     def test(self, audio_file_path=None, 
              label_file_path=None, data_config=None, 
@@ -54,19 +60,20 @@ class Predictor:
         plt.show()
         
     def predict(self, audio_file_path, data_config,
-                k=20, plot=False, question_id=0, save_path=None):
+                k=20, plot=False, question_id=0, save_path=None, return_label=False):
         self.model.to(self.device)
         self.model.eval()
         audio, sr = librosa.load(audio_file_path, sr=data_config['sr'])
         data = audio_to_tensor(audio, data_config)
         inp = Variable(torch.FloatTensor(np.array([data])).to(self.device), requires_grad=False)
         prob_out = self.model(inp).detach().cpu().numpy()[0]
-        labels = np.array(['E' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)]
-                          + ['J' + ('0' if (i % 44)+1 < 10 else '') + str(i + 1) for i in range(44)])
         if plot:
-            self.plot_prob(prob_out, labels, save_path)
-            
-        return prob_out, labels
+            self.plot_prob(prob_out, self.labels, save_path)
+        
+        if return_label:
+            return prob_out, self.labels
+        else:
+            return prob_out
         
     def load_model_from_path(self, path, device=None):
         if device is None:

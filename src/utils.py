@@ -11,8 +11,6 @@ import numpy as np
 import torch
 from random import seed
 
-seed(2)
-
 class dotdict(dict):
     def __getattr__(self, name):
         return self[name]
@@ -62,3 +60,6 @@ def gather_files(_dir, _extension, _list, isdir = False):
 
     # return list_files
     return check_list
+def intersection(lst1, lst2):
+    lst3 = [value for value in lst1 if value in lst2]
+    return lst3

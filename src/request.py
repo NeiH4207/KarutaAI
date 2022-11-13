@@ -1,4 +1,5 @@
 import json
+import sys
 import requests
 import base64
 import numpy as np
@@ -60,8 +61,11 @@ class Socket:
             "n_divided": n_parts
         }
         response = requests.post(url, headers=self.headers, 
-                                 json=body, verify=False)
-        sdata = response.json()['data']
+                                 json=body, verify=False).json()
+        if 'data' not in response:
+            print ("Question not found")
+            sys.exit(0)
+        sdata = response['data']
         durations = [x['duration'] for x in sdata]
         indexes = [x['index'] for x in sdata]
         return [durations, indexes]
@@ -99,7 +103,7 @@ class Socket:
         body = {
             "answer_data": answer_data,
             "question_id": question_id,
-            "team_id": team_id,
+            "team_id": 14,
             "match_id": match_id
         }
         response = requests.post(url, headers=self.headers, 
@@ -123,13 +127,37 @@ class Socket:
             score_data = json.loads(answer_info['score_data'])['score_data']
             self.edit_answer(answer_info['id'], answer_data)
         answer_info = self.get_all_answer_info(question_id)
-        score_data = json.loads(answer_info['score_data'])['score_data']
-        return score_data['correct'], score_data['changed']
+        if answer_info is not None:
+            score_data = json.loads(answer_info['score_data'])['score_data']
+            return score_data['correct'], score_data['changed']
+        else:
+            print('May be not found this question or team not added in this round')
+            return -1, -1
         
     def del_all_answer(self, challenge_id=None):
         url = END_POINT_API + '/solution/delete/{}'.format(challenge_id)
         response = requests.delete(url, headers=self.headers, verify=False)
         return response.json()
+    
+    def download_all_answers(self, path):
+        for id in range(1000):
+            url = END_POINT_API + '/answer/{}'.format(id)
+            response = requests.get(url, headers=self.headers, verify=False)
+            
+            if response.status_code == 200:
+                response = response.json()
+                response['answer_data'] = json.loads(response['answer_data'])
+                response['question']['question_data'] = json.loads(response['question']['question_data'])
+                response['score_data'] = json.loads(response['score_data'])
+                json.dump(response, open('{}/answer_{}_{}_{}_{}.json'.format(
+                                                    path, 
+                                                    response['question']['name'],
+                                                    response['match']['id'],
+                                                    response['team']['account'], 
+                                                    response['id']), 
+                                         'w'), 
+                          indent=2)
+                
     
     def send(self, challenge_id, data_text):
         url = END_POINT_API + '/solution/submit/{}'.format(challenge_id)

@@ -2,8 +2,6 @@ from libraries.utils import *
 import argparse
 from libraries.voice import *
 from tqdm import tqdm
-from random import random, randint
-
 
 def parser_args():
     parser = argparse.ArgumentParser(description='')
@@ -19,24 +17,23 @@ def parser_args():
     parser.add_argument('--num_mixed', type=int,
                         help='the max number of mixed readers',
                         default=15)
-    parser.add_argument('--num_segs', type=int,
-                        help='the random segments readers',
-                        default=30)
     parser.add_argument('--min_time',
                         help='the minimum time audio', type=float,
                         default=0.5)
     parser.add_argument('--max_time',
                         help='the maximum time audio', type=float,
-                        default=2.5)
+                        default=1.0)
     parser.add_argument('--gen-data-path',
                         help='the path of the result',
-                        default='generated_data/max15/train/')
+                        default='generated_data/max20_3/train/')
     return parser.parse_args()
 
 
 def main():
     args = parser_args()
     all_files = gather_file(args.datapath, ext='.wav')
+    datafile = []
+    
     if args.language == 'en':
         datafile = [os.path.join(args.datapath, _file)
                     for _file in all_files if _file.startswith('E')]
@@ -58,13 +55,9 @@ def main():
     for idx, fn in enumerate(datafile):
         data, typ, params = get_wav_channel(fn, chns[idx][0])
         wav_data.append(data)
-        channels.append(params.nchannels)
+        all_labels.append(fn.split('/')[-1].split('.')[0])
         
-        samples = split_wav_by_time(
-            data, params, time_range=(args.min_time, args.max_time), num_samples=args.num_segs)
-        all_samples.append(np.array(samples))
-        all_labels.append(np.array([fn.split('/')[-1].split('.')[0]] * len(samples)))
-
+    all_labels = np.array(all_labels)
     # shuffle samples
     gen_data_path = args.gen_data_path
     data_path = os.path.join(gen_data_path, 'data')
@@ -78,14 +71,13 @@ def main():
 
     for idx in tqdm(range(args.num_gen_data)):
         num_mixed = 1 + np.random.randint(2, max(3, args.num_mixed))
-        ids = np.random.randint(0, len(all_samples), size=num_mixed)
         labels = []
         samples = []
-        selected_sample_ids = np.array([np.random.choice(len(all_samples[id]), 1)[0] 
-                            for id in ids])
-        for i, id in enumerate(ids):
-            samples.append(all_samples[id][selected_sample_ids[i]])
-            labels.append(all_labels[id][selected_sample_ids[i]])
+        selected_sample_ids = np.random.choice(88, num_mixed, replace=False)
+        time_interval = random() * (args.max_time - args.min_time) + args.min_time
+        for id in selected_sample_ids:
+            samples.append(get_wav_by_time(wav_data[id], params, time_interval))
+        labels = all_labels[selected_sample_ids]
         audio_file_path = os.path.join(
             data_path, '{}_combined_sample_{}.wav'.format(args.language, idx))
         label_file_path = os.path.join(

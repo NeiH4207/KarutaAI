@@ -70,6 +70,8 @@ class NNet(nn.Module):
             self.optimizer = optim.RMSprop(self.parameters(), lr=lr)
         elif optimizer == "nadam":
             self.optimizer = optim.NAdam(self.parameters(), lr=lr)
+        else:
+            self.optimizer = Adas(self.parameters(), lr=lr)
 
     def reset_grad(self):
         self.optimizer.zero_grad()

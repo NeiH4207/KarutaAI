@@ -1,6 +1,6 @@
 import argparse
 from models.arcnn import ARCNN
-from models.lstm import CLSTM, CNN
+from models.lstm import CLSTM
 import torch
 from src.predictor import Predictor
 from src.trainer import Trainer
@@ -17,7 +17,7 @@ def parse_args():
                         help='audio file to training data')
     
     parser.add_argument('--model-file-path', type=str, 
-                        default='trainned_models/LSTM3/model.pt')
+                        default='trainned_models/LSTM5/model.pt')
     
     parser.add_argument('-k', type=int, default=20,
                         help='Num mixed readers')
@@ -34,10 +34,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     if args.cpu:
         device = 'cpu'
-    else:
-        device = "cuda" if torch.cuda.is_available() else "cpu"
     
     data_config = {
         'num_mfcc': 39,
@@ -45,7 +44,7 @@ def main():
         'n_fft': 2048,
         'hop_length': 512,
         'sr': 48000,
-        'fixed-time': 2.5
+        'fixed-time': 1
     }
     
     data_config['timeseries_length'] = int(1 + \
@@ -73,9 +72,9 @@ def main():
     predictor.load_model_from_path(args.model_file_path)
     prob_out, labels = predictor.predict(args.audio_file_path, data_config,
         k=88, plot=True, 
-        question_id=0,
-        save_path=args.save_file_path)
-    print(str(labels[prob_out.argsort()[::-1]][:args.k]).replace(' ', ', ').replace('\'', '\"'))
+        question_id=0, return_label=True,
+        save_path=None)
+    print(str(sorted(labels[prob_out.argsort()[::-1]][:args.k])).replace(' ', ', ').replace('\'', '\"'))
     
 if __name__ == "__main__":
     main()

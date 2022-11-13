@@ -35,6 +35,8 @@ def save_wave(output_data, params, outputchannels, ofn):
     outwav.writeframes(output_data.astype('<i2').tobytes())
     outwav.close()
 
+def get_wave_scale(wave):
+    return np.array(wave).astype('<i2') / (2**16)*2
 
 def combine_waves(frames, typ, params, output_fn=None, outputchannels=None):
     if output_fn is not None:
@@ -62,6 +64,15 @@ def split_wav_by_time(wav_data, params, time_range=(0.0, 1.0), num_samples=1):
     samples = [wav_data[start_idx:start_idx+int((random() * \
                 (time_range[1] - time_range[0]) + time_range[0]) / seconds * wav_len)]
                     for start_idx in start_idx]
+    return samples
+
+def get_wav_by_time(wav_data, params, time_interval=1.0):
+    wav_len = wav_data.shape[0]
+    seconds = wav_len / params.framerate
+    sample_len = min(wav_len, int(time_interval / seconds * wav_len))
+    min_offset = 4800
+    start_idx = np.random.randint(max(0, (wav_len - sample_len)) // min_offset) * min_offset
+    samples = wav_data[start_idx:start_idx+sample_len]
     return samples
 
 
