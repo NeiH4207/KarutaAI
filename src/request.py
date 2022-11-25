@@ -70,16 +70,23 @@ class Socket:
         indexes = [x['index'] for x in sdata]
         return [durations, indexes]
     
+
+    def get_info_audio_part(self, id, new=False):
+        url = END_POINT_API + '/question/{}/divided-data'.format(id)
+        body = {
+            "new": new
+        }
+        response = requests.post(url, headers=self.headers, json=body,
+                                verify=False).json()
+        return response['data']
+    
     def get_div_audio(self, id, part):
-        url = END_POINT_API + '/question/{}/audio/divided-data?index={}'.format(id, part)
+        url = END_POINT_API + '/question/{}/audio/divided-data?uuid={}'.format(id, part)
         response = requests.get(url, headers=self.headers, verify=False)
         sdata = response.content
         typ = { 1: np.uint8, 2: np.uint16, 4: np.uint32 }.get(2)
         print ("Extracting channel {} out of {} channels, {}-bit depth".format(0+1, 1, 2*8))
         data = np.frombuffer(sdata.split(b'data')[1][4:], dtype=typ)
-        with open('sample.wav', 'wb') as f:
-            f.write(sdata)
-            f.close()
         return data
     
     def get_audio_data(self, id=None):
@@ -103,7 +110,7 @@ class Socket:
         body = {
             "answer_data": answer_data,
             "question_id": question_id,
-            "team_id": 14,
+            "team_id": team_id,
             "match_id": match_id
         }
         response = requests.post(url, headers=self.headers, 
@@ -149,14 +156,14 @@ class Socket:
                 response['answer_data'] = json.loads(response['answer_data'])
                 response['question']['question_data'] = json.loads(response['question']['question_data'])
                 response['score_data'] = json.loads(response['score_data'])
-                json.dump(response, open('{}/answer_{}_{}_{}_{}.json'.format(
+                save_path = '{}/answer_{}_{}_{}_{}.json'.format(
                                                     path, 
                                                     response['question']['name'],
                                                     response['match']['id'],
                                                     response['team']['account'], 
-                                                    response['id']), 
-                                         'w'), 
-                          indent=2)
+                                                    response['id'])
+                json.dump(response, open(save_path,  'w'), indent=2)
+                print(save_path)
                 
     
     def send(self, challenge_id, data_text):
