@@ -1,11 +1,8 @@
 import pickle
-from random import random
 import numpy as np
-import math
 import os
 import librosa
 import librosa.display
-import json
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -27,11 +24,14 @@ def plot(y):
     plt.tight_layout()
     plt.show()
 
-def audio_to_tensor(audio, data_config):
-    audio = audio.astype(np.float32)
+def audio_to_tensor(audio, data_config, fixed_length=False):
     sr = data_config['sr']
-    fixed_size = int(sr * data_config['fixed-time'])
-    y = librosa.util.fix_length(audio, size=fixed_size)
+    if fixed_length:
+        audio = audio.astype(np.float32)
+        fixed_size = int(sr * data_config['fixed-time'])
+        y = librosa.util.fix_length(audio.astype(np.float32), size=fixed_size)
+    else:
+        y = audio.astype(np.float32)
     
     mfcc = librosa.feature.mfcc(
         y=y, sr=sr, n_fft = data_config['n_fft'],
@@ -59,12 +59,9 @@ def audio_to_tensor(audio, data_config):
     spectral_contrast = librosa.feature.spectral_contrast(
         y=y, sr=sr, hop_length=data_config['hop_length']
     )
-    data = np.zeros(
-        (data_config['timeseries_length'],
-         17 + 8 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
-    )
     order_sizes = [0, data_config['num_mfcc'], 7, 1, 17,  data_config['num_chroma']]
     cumsum_sizes = np.cumsum(order_sizes)
+    data = np.zeros((mfcc.shape[1], cumsum_sizes[-1]), dtype=np.float64)
     order_features = [mfcc, spectral_contrast, spectral_center, tempogram, chroma]
     
     for i in range(len(order_features)):
@@ -78,10 +75,7 @@ def preprocess(datasetpath, dumppath, data_config, n_skips=0):
     data_filenames = sorted(gather_files_from_folder(datasetpath, '.wav'))
     label_filenames = sorted(gather_files_from_folder(datasetpath, '.txt'))
     
-    data = np.zeros(
-        (data_config['batch-length'], data_config['timeseries_length'],
-         8 + 17 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
-    )
+    data = []
     target = []
     
     for i, data_filename in tqdm(enumerate(
@@ -96,11 +90,11 @@ def preprocess(datasetpath, dumppath, data_config, n_skips=0):
         target.append(label)
         #Going through each data_filename within a label
         audio, sr = librosa.load(data_filename, sr=data_config['sr'])
-        idx = i % data_config['batch-length']
-        data[idx, :] = audio_to_tensor(audio, data_config)[:]
+        # idx = i % data_config['batch-length']
+        data.append(audio_to_tensor(audio, data_config, fixed_length=False))
         if (((i + 1) % data_config['batch-length']) == 0) or (i + 1) == len(data_filenames):
             dataset = {
-                'data': data[:idx+1],
+                'data': data,
                 'target': target
             }
             if dumppath:
@@ -110,10 +104,7 @@ def preprocess(datasetpath, dumppath, data_config, n_skips=0):
                     format(int((i + 1 + n_skips) / data_config['batch-length'])))
                 with open(_dumppath, 'wb') as fp:
                     pickle.dump(dataset, fp)
-            data = np.zeros(
-                (data_config['batch-length'], data_config['timeseries_length'],
-                8 + 17 + data_config['num_chroma'] + data_config['num_mfcc']), dtype=np.float64
-            )
+            data = []
             target = []
         
 def load_data(data_path):
@@ -125,8 +116,8 @@ def load_data(data_path):
     with open(data_path, "rb") as fp:
         data = pickle.load(fp)
         fp.close()
-    x = np.array(data["data"])
-    y = np.array(data["target"])
+    x = data["data"]
+    y = data["target"]
     print("Loaded Data\n")
     return x, y
 
