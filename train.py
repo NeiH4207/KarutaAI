@@ -2,11 +2,8 @@ import argparse
 import os
 from random import seed, shuffle
 import numpy as np
-from models.alstm import ALSTM
-from src.data_helper import load_data, preprocess
-from models.lstm import CLSTM
-from models.rcnn import RCNN
-from models.arcnn import ARCNN
+from src.data_helper import load_data
+from models.lstm import CLSTM, CLSTM2
 import torch
 from src.trainer import Trainer
 from src.utils import gather_files_from_folder
@@ -16,7 +13,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--datasetpath', type=str,
-                        default='transformed/128_max20/')
+                        default='transformed/128_max_11_20_dynamic_length/')
     parser.add_argument('--model-path', type=str, default='./trained_models"')
 
     parser.add_argument('-d', '--model-save-dir', type=str,
@@ -64,23 +61,13 @@ def main():
         return
     device = "cuda" if torch.cuda.is_available() else "cpu"
     seed(args.seed)
-    model = CLSTM(
+    model = CLSTM2(
         input_size=128,
         hidden_size=512,
         num_layers=2,
         num_classes=88,
         device=device
     )
-    
-    # model = ALSTM(
-    #     input_shape=x_val[0].shape,
-    #     num_chunks= 4,
-    #     in_channels=1,
-    #     rnn_hidden_size=512,
-    #     rnn_num_layers=2,
-    #     num_classes=88, 
-    #     device=device
-    # )
 
     training_params = {
         'loss_function': args.loss,
