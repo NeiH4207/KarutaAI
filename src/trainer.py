@@ -12,6 +12,7 @@ import pandas as pd
 from src.evaluator import Evaluator
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from src.utils import *
+from configs.conf import data_config
 
 
 class Trainer:
@@ -65,9 +66,20 @@ class Trainer:
         else:
             dataset = x
             labelset = y
+        real_lengths = [x.shape[0] for x in dataset]
         for i in range(0, len(dataset), batch_size):
-            batches.append((np.array(dataset[i:i + batch_size]), np.array(labelset[i:i + batch_size])))
-            
+            batches.append((dataset[i:i + batch_size], 
+                            labelset[i:i + batch_size],
+                            real_lengths[i:i + batch_size]))
+        
+        for i, (data, label, length) in enumerate(batches):
+            max_len = data_config['timeseries_length']
+            for j, len_ in enumerate(length):
+                if len_ < max_len:
+                    data[j] = np.concatenate([data[j], 
+                            np.zeros((max_len - len_, data[j].shape[1]), 
+                                dtype=np.float64)])
+            batches[i] = (np.array(data), np.array(label), np.array(length))
         return batches
 
     def eval(self, val_loader):
@@ -75,12 +87,12 @@ class Trainer:
         val_accuracies = []
 
         self.model.eval()
-        for inp, lab in val_loader:
+        for inp, lab, len_ in val_loader:
             inp = Variable(torch.FloatTensor(inp), requires_grad=False)
             lab = Variable(torch.FloatTensor(lab), requires_grad=False)
             inp, lab = inp.to(self.device).detach(), lab.to(
                 self.device).detach()
-            out = self.model(inp).detach()
+            out = self.model(inp, len_).detach()
             loss = self.model.loss(out.detach(), lab.detach())
             out = out.cpu().numpy()
             out = [x[::-1][:int(sum(lab[i]).item())]
@@ -143,14 +155,17 @@ class Trainer:
 
         val_loader = self.split_batch(
             self.val_x, self.val_y, batch_size=batch_size, shuffle=False)
-
+        val_loss, val_acc = self.eval(val_loader)
+        # print(val_loss, val_acc)
+        
         for i in range(epochs):
             train_loader = self.split_batch(
                 self.train_x, self.train_y, batch_size=batch_size, shuffle=True)
+            # self.free_all()
             t = tqdm(train_loader)
             tot_loss = 0
             counter = 0
-            for inputs, labels in t:
+            for inputs, labels, rlengths in t:
                 counter += 1
                 inputs = Variable(torch.FloatTensor(
                     inputs), requires_grad=True)
@@ -158,7 +173,7 @@ class Trainer:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
 
                 self.model.zero_grad()
-                output = self.model(inputs)
+                output = self.model(inputs, rlengths)
                 loss = self.model.loss(output, labels.detach())
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), clip)
@@ -178,9 +193,11 @@ class Trainer:
                       format(self.valid_loss_min, val_loss))
                 torch.save(self.model.state_dict(), self.model_path)
                 self.valid_loss_min = val_loss
-            elif val_acc > self.valid_acc_max:
-                self.valid_acc_max = val_acc
-                torch.save(self.model.state_dict(), self.model_path)
+            # elif val_acc > self.valid_acc_max:
+            #     print('Accuracy increased ({:.6f} --> {:.6f}).  Saving model ...'.
+            #           format(self.valid_acc_max, val_acc))
+            #     self.valid_acc_max = val_acc
+            #     torch.save(self.model.state_dict(), self.model_path)
             scheduler.step(val_loss)
 
         return (self.model)
