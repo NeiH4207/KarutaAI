@@ -154,8 +154,8 @@ class Karuta():
         answers = []
         while True:
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
-            shuffle(self.part_ids)
-            # self.part_ids = self.part_ids[:1]
+            # shuffle(self.part_ids)
+            self.part_ids = self.part_ids[:1]
             print(self.part_ids)
             for id in self.part_ids:
                 # save_path = 'audio/question_{}_{}.wav'.\
@@ -173,9 +173,9 @@ class Karuta():
                 orders = np.argsort(prob_sum)[::-1][:self.num_cards+10]
                 if not os.path.exists('tmp'):
                     os.makedirs('tmp')
-                self.predictors[0].plot_prob(prob_sum[orders], 
-                                    self.labels[orders].tolist(), 'tmp/question_{}.png'.\
-                                    format(self.question_id))
+                # self.predictors[0].plot_prob(prob_sum[orders], 
+                #                     self.labels[orders].tolist(), 'tmp/question_{}.png'.\
+                #                     format(self.question_id))
             break
             q = input('Get new part? yes/no (y/n)')
             if 'y' in q.lower():

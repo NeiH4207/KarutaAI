@@ -83,8 +83,8 @@ def main():
     # orders = np.argsort(prob_sum)[::-1][:n_cards+10]
     ans_out = labels[np.argsort(probs)[::-1]][:n_cards].tolist()
     answer = ans_out
-    # predictor1.plot_prob(probs[orders], labels[orders], 'audio/question_{}.png'.\
-    #                             format(karuta.question_id))
+    karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
+                                    'tmp/question_{}.png'.format(karuta.question_id))
     old_corrects, old_changes = karuta.submit(answer)
     if old_corrects == -1:
         for ans in answers:
