@@ -7,6 +7,8 @@ from libraries.voice import save_wave
 from configs.conf import wav_params
 import os
 
+from src.utils import bcolors
+
 class Karuta():
 
     def __init__(self, socket: Socket):
@@ -135,18 +137,18 @@ class Karuta():
         final_score = (raw_score - final_penalties) * (1 + final_bonus_factor)
         return num_correct, num_changes, final_score, max_score
         
-    def submit(self, answer):
+    def submit(self, answer, verbose=True):
         # print('Submit:', answer) 
         self.submision_history.append(answer)
         score_data = self.socket.submit(self.question_id, answer)
         if len(self.submision_history) == 1:
             self.first_summited_change = score_data['changed']
-        print("------------ Submission {} -----------".format(len(self.submision_history)))
         num_corrects, num_changes, final_score, max_score = self.get_final_score(score_data)
-        print('Corrects: {}/{}'.format(num_corrects, self.num_cards), '|', 'Changes: {}'.format(num_changes))
-        print('Final score: {}/{}'.format(final_score, max_score))
-        print('--------------------------------------')
-        return num_corrects, num_changes
+        if verbose:
+            print(bcolors.OKBLUE + "Score: {}/{} ({}), change: {}, final score: {}/{}".format(
+                num_corrects, self.num_cards, score_data['score']['raw_score'],
+                num_changes, final_score, max_score))
+        return num_corrects
     
     def request_audio(self, save_audio_part=False, return_probs=True):    
         new = False
@@ -154,7 +156,7 @@ class Karuta():
         answers = []
         while True:
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
-            # shuffle(self.part_ids)
+            shuffle(self.part_ids)
             self.part_ids = self.part_ids[:1]
             print(self.part_ids)
             for id in self.part_ids:

@@ -9,7 +9,7 @@ from copy import deepcopy as copy
 from configs.conf import data_config
 from src.request import Socket
 
-from src.utils import intersection
+from src.utils import bcolors, intersection
 warnings.filterwarnings("ignore")
 
 def parse_args():
@@ -83,7 +83,7 @@ def main():
     # orders = np.argsort(prob_sum)[::-1][:n_cards+10]
     ans_out = labels[np.argsort(probs)[::-1]][:n_cards].tolist()
     answer = ans_out
-    old_corrects, old_changes = karuta.submit(answer)
+    old_corrects = karuta.submit(answer)
     if old_corrects == -1:
         for ans in answers:
             print("Num correct intersect {}/{}".format(len(intersection(ans, answer)), n_cards))
@@ -92,16 +92,15 @@ def main():
         Reader cards selected by K best probs from LSTM trained model.
     """
     new_corrects = old_corrects
-    new_changes = old_changes
     orders = np.argsort(probs)[::-1]
     bad_card = labels[orders[-1]]
     skipping_cards = np.zeros(88, dtype=bool)
     karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
                                     'tmp/question_{}.png'.format(karuta.question_id))
     
-    q = input('Change answer? yes/no (y/n): ')
+    q = input(bcolors.WARNING + 'Change answer? yes/no (y/n): ')
     if 'y' in q.lower():
-        while new_corrects != n_cards:
+        while True:
             wrong_card = None
             wrong_id = None
             for i in range(n_cards):
@@ -109,42 +108,52 @@ def main():
                     continue
                 answer = copy(ans_out)
                 answer[n_cards-i-1] = bad_card
-                answer = sorted(answer)
-                corrects, _ = karuta.submit(answer)
+                corrects = karuta.submit(sorted(answer), verbose=False)
                 if corrects == old_corrects:
                     wrong_card = orders[n_cards-i-1]
                     wrong_id = n_cards-i-1
+                    probs[wrong_card] = 0  
                     break
                 else:
                     skipping_cards[orders[n_cards-i-1]] = True
                     
-            probs[wrong_card] = 0      
+            assert wrong_id is not None
+            print(bcolors.FAIL + "Card {} is wrong, changing it with high probability card.".format(labels[wrong_card]))
+            # orders = np.argsort(probs)[::-1]
+            # ans_out = labels[orders][:n_cards].tolist()
             
-            for change_card_id in orders[n_cards:]:
-                print('Change {} to {}'.format(labels[wrong_card], labels[change_card_id]))
-                answer = copy(ans_out)
+            for i, change_card_id in enumerate(orders[n_cards:]):
+                print(bcolors.WARNING + 'Change {} to {}'.format(answer[wrong_id], labels[change_card_id]))
                 answer[wrong_id] = labels[change_card_id]
-                answer = sorted(answer)
-                corrects, changes = karuta.submit(answer)
-                if corrects > new_corrects:
-                    new_corrects, new_changes = corrects, changes
+                corrects = karuta.submit(sorted(answer))
+                if corrects > old_corrects:
+                    old_corrects = corrects
+                    skipping_cards[change_card_id] = True
+                    print(bcolors.OKGREEN + "Card {} is correct".format(labels[change_card_id]))
+                    probs[change_card_id] = 1
                     break
                 else:
+                    print(bcolors.FAIL + "Card {} is not correct".format(labels[change_card_id]))
                     probs[change_card_id] = 0
-                
+                # question if each 5 cards are not changed
+                if i % 4 == 0 and i > 0:
+                    q = input(bcolors.WARNING + '4 cards are not changed. Continue? yes/no (y/n): ')
+                    if 'n' in q.lower():
+                        for i, ans in enumerate(answers):
+                            print("Num correct intersect {}/{} in part {}".\
+                                format(len(intersection(ans, answer)), n_cards, i))
+                        return
             orders = np.argsort(probs)[::-1]
             ans_out = labels[orders][:n_cards].tolist()
-            answer = sorted(ans_out)
-            old_corrects = new_corrects
             
             karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
                                             'tmp/question_{}.png'.format(karuta.question_id))
-            if new_corrects != n_cards:
-                q = input('Change answer? yes/no (y/n): ')
+            if old_corrects != n_cards:
+                q = input(bcolors.WARNING + 'Change answer? yes/no (y/n): ')
                 if 'n' in q.lower():
                     break
-            
-    print('Num changed used:', new_changes - old_changes)  
+            else:
+                break
     
     for i, ans in enumerate(answers):
         print("Num correct intersect {}/{} in part {}".format(len(intersection(ans, answer)), n_cards, i))
