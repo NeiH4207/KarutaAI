@@ -1,9 +1,8 @@
 import json
+import os
 import sys
 import requests
-import base64
 import numpy as np
-# from src.data_helper import DataProcessor
 
 # TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNjQ1OTU2MzYyLCJleHAiOjE2NDU5NzQzNjJ9.a_O5bxFBlPZZRamp5XaiLlxcH7dLbWoHlhP7cZGehGA'
 END_POINT_API = 'https://procon2022.duckdns.org'
@@ -105,13 +104,11 @@ class Socket:
                     return answer
         return None
     
-    def post_answer(self, team_id, match_id, question_id, answer_data):
+    def post_answer(self, question_id, answer_data):
         url = END_POINT_API + '/answer'
         body = {
             "answer_data": answer_data,
-            "question_id": question_id,
-            "team_id": team_id,
-            "match_id": match_id
+            "question_id": question_id
         }
         response = requests.post(url, headers=self.headers, 
                                  json=body, verify=False)
@@ -126,20 +123,20 @@ class Socket:
                                  json=body, verify=False)
         return response.json()
     
-    def submit(self, team_id, match_id, question_id, answer_data, not_check=False):    
+    def submit(self, question_id, answer_data):    
         answer_info = self.get_all_answer_info(question_id)
         if answer_info == None:
-            self.post_answer(team_id, match_id, question_id, answer_data)
+            self.post_answer(question_id, answer_data)
         else:
             score_data = json.loads(answer_info['score_data'])['score_data']
             self.edit_answer(answer_info['id'], answer_data)
         answer_info = self.get_all_answer_info(question_id)
         if answer_info is not None:
             score_data = json.loads(answer_info['score_data'])['score_data']
-            return score_data['correct'], score_data['changed']
+            return score_data
         else:
             print('May be not found this question or team not added in this round')
-            return -1, -1
+            return None
         
     def del_all_answer(self, challenge_id=None):
         url = END_POINT_API + '/solution/delete/{}'.format(challenge_id)
@@ -147,6 +144,8 @@ class Socket:
         return response.json()
     
     def download_all_answers(self, path):
+        if not os.path.exist(path):
+            os.makdirs(path)
         for id in range(1000):
             url = END_POINT_API + '/answer/{}'.format(id)
             response = requests.get(url, headers=self.headers, verify=False)
@@ -165,7 +164,6 @@ class Socket:
                 json.dump(response, open(save_path,  'w'), indent=2)
                 print(save_path)
                 
-    
     def send(self, challenge_id, data_text):
         url = END_POINT_API + '/solution/submit/{}'.format(challenge_id)
         header = self.headers.copy()

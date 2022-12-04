@@ -4,38 +4,41 @@
 
 ```
 .
+├── build
+│   ├── bdist.linux-x86_64
+│   └── lib
+├── configs
+│   ├── conf.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   └── wav_config.json
+├── configs.py
 ├── data
 │   ├── JKspeech
 │   ├── problem
 │   └── sample_Q_202205
-├── deep_audio_features
-│   ├── build
-│   ├── deep_audio_features
-│   ├── deep_audio_features.egg-info
-│   ├── LICENSE
-│   ├── pretrained_CNNs
-│   ├── README.md
-│   ├── requirements.txt
-│   ├── scripts
-│   └── setup.py
-├── generated_data
-│   ├── data
-│   └── label
+├── inference.py
 ├── interaction.py
-├── KaturaAI.code-workspace
 ├── libraries
 │   ├── __pycache__
 │   ├── utils.py
 │   └── voice.py
-├── main.py
 ├── models
+│   ├── lstm.py
+│   └── nnet.py
 ├── README.md
 ├── setup.py
-└── src
-    ├── data_generator.py
-    ├── karuta.py
-    ├── recognizer.py
-    └── request.py
+├── src
+│   ├── data_helper.py
+│   ├── encoder.py
+│   ├── evaluator.py
+│   ├── karuta.py
+│   ├── predictor.py
+│   ├── request.py
+│   └── utils.py
+└── trainned_models
+    ├── LSTM1
+    └── LSTM2
 ```
 
 ### Installation

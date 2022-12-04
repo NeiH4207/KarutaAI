@@ -1,5 +1,4 @@
 import argparse
-from models.arcnn import ARCNN
 from models.lstm import CLSTM, CLSTM2
 import numpy as np
 from tqdm import tqdm

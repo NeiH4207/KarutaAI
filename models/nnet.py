@@ -7,9 +7,6 @@ import torch
 from torch import optim
 import torch.nn as nn
 
-from AdasOptimizer.adasopt_pytorch import Adas
-
-
 class NNet(nn.Module):
     def __init__(self):
         self.name = 'NNet'
@@ -71,7 +68,7 @@ class NNet(nn.Module):
         elif optimizer == "nadam":
             self.optimizer = optim.NAdam(self.parameters(), lr=lr)
         else:
-            self.optimizer = Adas(self.parameters(), lr=lr)
+            raise ValueError("Optimizer not found")
 
     def reset_grad(self):
         self.optimizer.zero_grad()

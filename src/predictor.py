@@ -7,6 +7,8 @@ import seaborn as sns
 from src.data_helper import *
 import pandas as pd
 from src.utils import *
+import matplotlib
+matplotlib.style.use('ggplot')
 
 
 class Predictor:
@@ -23,9 +25,14 @@ class Predictor:
 
     def plot_prob(self, probs, labels, save_path=None):
         df = pd.DataFrame({'probability': probs, 'labels': labels})
+        summited_columns = np.array([True] * len(labels))
+        summited_columns[-10:] = False
+        df['summitted'] = summited_columns
         ax = sns.barplot(x='labels', y='probability',
-                            data=df, errwidth=0)
+                         hue='summitted',
+                        data=df, errwidth=0)
         # plt.xticks(color='w')
+        plt.xticks(rotation='vertical')
         if save_path:
             plt.savefig(save_path)
         plt.show()
