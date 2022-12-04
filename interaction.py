@@ -83,8 +83,6 @@ def main():
     # orders = np.argsort(prob_sum)[::-1][:n_cards+10]
     ans_out = labels[np.argsort(probs)[::-1]][:n_cards].tolist()
     answer = ans_out
-    karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
-                                    'tmp/question_{}.png'.format(karuta.question_id))
     old_corrects, old_changes = karuta.submit(answer)
     if old_corrects == -1:
         for ans in answers:
@@ -98,6 +96,8 @@ def main():
     orders = np.argsort(probs)[::-1]
     bad_card = labels[orders[-1]]
     skipping_cards = np.zeros(88, dtype=bool)
+    karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
+                                    'tmp/question_{}.png'.format(karuta.question_id))
     
     q = input('Change answer? yes/no (y/n): ')
     if 'y' in q.lower():
@@ -146,8 +146,8 @@ def main():
             
     print('Num changed used:', new_changes - old_changes)  
     
-    for ans in answers:
-        print("Num correct intersect {}/{}".format(len(intersection(ans, answer)), n_cards))
+    for i, ans in enumerate(answers):
+        print("Num correct intersect {}/{} in part {}".format(len(intersection(ans, answer)), n_cards, i))
         
 if __name__ == '__main__':
     main()
