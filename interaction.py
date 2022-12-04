@@ -84,7 +84,7 @@ def main():
     ans_out = labels[np.argsort(probs)[::-1]][:n_cards].tolist()
     answer = ans_out
     old_corrects = karuta.submit(answer)
-    if old_corrects == -1:
+    if old_corrects == -1 or old_corrects == n_cards:
         for ans in answers:
             print("Num correct intersect {}/{}".format(len(intersection(ans, answer)), n_cards))
         return

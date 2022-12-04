@@ -157,7 +157,7 @@ class Karuta():
         while True:
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
             shuffle(self.part_ids)
-            self.part_ids = self.part_ids[:1]
+            self.part_ids = self.part_ids
             print(self.part_ids)
             for id in self.part_ids:
                 # save_path = 'audio/question_{}_{}.wav'.\
