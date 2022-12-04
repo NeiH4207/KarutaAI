@@ -17,19 +17,9 @@ def parse_args():
     parser.add_argument("--token", type=str,
         default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTQsIm5hbWUiOiLEkOG6oWkgaOG7jWMgQsOhY2gga2hvYSBIw6AgTuG7mWkiLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTY3MDE0MTA2M30.jQg5OascEeYAK1RVbYVEwALunilNJ8XlTzNtrYh0MOE"
     )
-    parser.add_argument("-s", "--tournament_name",
-                        type=str, default='')
-    parser.add_argument("-r", "--round_name", type=str, default='')
-    parser.add_argument("-m", "--match_name", type=str, default='Tran1')
-    parser.add_argument("-q", "--question_name", type=str, default='Q_18')
-    parser.add_argument("--qid", type=int, default=52)
-    parser.add_argument("-c", "--account", type=str, default='BK.PuzzleGod')
-    parser.add_argument("-n", "--new", action='store_true')
-    parser.add_argument("--part-id", type=int, default=0)
+    parser.add_argument("-q", "--questionID", type=int, default=52)
+    parser.add_argument("-n", "--num_parts", type=int, default=1)
     parser.add_argument("--save-audio-part", action='store_true')
-    parser.add_argument("-a", "--answer_id", type=str, default=None)
-    parser.add_argument("--download-all-answers", action='store_true')
-    
     parser.add_argument('--model-file-path', type=str, 
                         default='trainned_models/LSTM2/model.pt')
     parser.add_argument('--model-file-path2', type=str, 
@@ -45,7 +35,7 @@ def main():
     
     karuta = Karuta(socket)
     try:
-        karuta.read_by_id(args.qid)
+        karuta.read_by_id(args.questionID)
     except Exception as e:
         print(e)
         return None
@@ -79,7 +69,8 @@ def main():
     n_cards = karuta.num_cards
     labels = predictor1.get_labels()
     
-    probs, answers = karuta.request_audio(return_probs=True, save_audio_part=args.save_audio_part)
+    probs, answers = karuta.request_audio(return_probs=True, save_audio_part=args.save_audio_part,
+                                          num_parts=args.num_parts)
     # orders = np.argsort(prob_sum)[::-1][:n_cards+10]
     ans_out = labels[np.argsort(probs)[::-1]][:n_cards].tolist()
     answer = ans_out

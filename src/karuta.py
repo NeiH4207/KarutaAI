@@ -36,83 +36,6 @@ class Karuta():
         
     def play(self):
         return
-    
-    def read(self, tournament_name, round_name,
-            match_name, account, question_name):
-        tournaments = self.socket.get_tournament()
-        tournament_id = None
-        round_id = None
-        match_id = None
-        question_id = None
-
-        for tournament in tournaments['data']:
-            if tournament['name'] == tournament_name:
-                tournament_id = tournament['id']
-                break
-        if tournament_id is None:
-            print("Tournament {} not found on server.".format(tournament_name))
-            print("Skipping read tournament infor.")
-        else:
-            self.tournament_info = self.socket.get_tournament(tournament_id)
-        rounds = self.socket.get_round()
-
-        for round in rounds['data']:
-            if round['name'] == round_name:
-                round_id = round['id']
-                break
-
-        if round_id is None:
-            print("Round \'{}\' not found on server.".format(round_name))
-            print("Skipping read round infor.")
-        else:
-            self.round_info = self.socket.get_round(round_id)
-
-        matches = self.socket.get_match()
-
-        for match in matches['data']:
-            if match['name'] == match_name:
-                match_id = match['id']
-                print("Match \'{}\' found on server.".format(match_name))
-                break
-
-        if match_id is None:
-            print("match \'{}\' not found on server.".format(match_name))
-        else:
-            self.match_info = self.socket.get_match(match_id)
-            
-        # teams = match_info['teams']
-        
-        # for team in teams:
-        #     if team['account'] == account:
-        #         team_id = team['id']
-        #         print("Team {} found on server.".format(team))
-        #         break
-
-        # if team_id is None:
-        #     print("team {} not found on server.".format(team_id))
-        #     return None
-        
-        questions = self.socket.get_question()
-
-        for question in questions['data']:
-            if question['name'] == question_name and question['match']['id'] == match_id:
-                question_id = question['id']
-                print("Question {} found on server.".format(question_name))
-                break
-
-        if question_id is None:
-            print("question {} not found on server.".format(question_name))
-            return None
-
-        question_info = self.socket.get_question(question_id)
-        self.tournament_id = tournament_id
-        self.round_id = round_id
-        # self.team_id = team_id
-        self.match_id = match_id
-        self.question = question_info
-        self.question['question_data'] = json.loads(self.question['question_data'])
-        self.num_cards = self.question['question_data']['n_cards']
-        self.question_id = self.question['id']
         
     def read_by_id(self, question_id):
         self.question_id = question_id
@@ -150,15 +73,15 @@ class Karuta():
                 num_changes, final_score, max_score))
         return num_corrects
     
-    def request_audio(self, save_audio_part=False, return_probs=True):    
+    def request_audio(self, save_audio_part=False, return_probs=True, num_parts=1):    
         new = False
         all_probs = []
         answers = []
+        print(bcolors.OKBLUE + "Number of parts required: {}".format(num_parts))
         while True:
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
             shuffle(self.part_ids)
-            self.part_ids = self.part_ids
-            print(self.part_ids)
+            self.part_ids = self.part_ids[:num_parts]
             for id in self.part_ids:
                 # save_path = 'audio/question_{}_{}.wav'.\
                 #                     format(self.question_id, id)
@@ -178,16 +101,10 @@ class Karuta():
                 # self.predictors[0].plot_prob(prob_sum[orders], 
                 #                     self.labels[orders].tolist(), 'tmp/question_{}.png'.\
                 #                     format(self.question_id))
-            break
-            q = input('Get new part? yes/no (y/n)')
-            if 'y' in q.lower():
-                new = True
-            else:
-                if len(self.part_ids) > 0:
-                    break
-                else:
-                    print("No data for predict, choose yes to get a new data")
-                    sys.exit(0)
+            if len(self.part_ids) >= num_parts:
+                break
+            new = True
+            
         if return_probs:
             return np.mean(all_probs, axis=0), answers
         
