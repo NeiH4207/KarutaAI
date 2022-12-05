@@ -82,13 +82,11 @@ def main():
     """
         Reader cards selected by K best probs from LSTM trained model.
     """
-    new_corrects = old_corrects
     orders = np.argsort(probs)[::-1]
     bad_card = labels[orders[-1]]
     skipping_cards = np.zeros(88, dtype=bool)
     karuta.predictors[0].plot_prob(probs[orders][:n_cards+10], labels[orders][:n_cards+10], 
                                     'tmp/question_{}.png'.format(karuta.question_id))
-    
     q = input(bcolors.WARNING + 'Change answer? yes/no (y/n): ')
     if 'y' in q.lower():
         while True:
@@ -110,8 +108,6 @@ def main():
                     
             assert wrong_id is not None
             print(bcolors.FAIL + "Card {} is wrong, changing it with high probability card.".format(labels[wrong_card]))
-            # orders = np.argsort(probs)[::-1]
-            # ans_out = labels[orders][:n_cards].tolist()
             
             for i, change_card_id in enumerate(orders[n_cards:]):
                 print(bcolors.WARNING + 'Change {} to {}'.format(answer[wrong_id], labels[change_card_id]))
