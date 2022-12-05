@@ -13,22 +13,23 @@ setup(
     author='Vu Quoc Hien',
     author_email='hienvq.2000@gmail.com',
     url='https://github.com/NeiH4207/KaturaAI',
-    packages=["src", "data", "models"],
+    packages=["src", "models", "libraries", "configs"],
     keywords='',
     install_requires=[
         'matplotlib==3.5.1',
         'numpy==1.21.2',
         'pandas==1.3.3',
-        'torch==1.12.0',
+        'torch==1.9.0',
         'tqdm==4.62.3',
         'torchsummary==1.5.1',
         'scikit-learn==1.0.2',
         'seaborn==0.11.2',
-        'librosa==0.9.2'
+        'librosa==0.8.1'
     ],
     python_requires='>=3.8',
     entry_points={
         'console_scripts': [
+            'karuta = interaction:main',
         ]
     },
 
