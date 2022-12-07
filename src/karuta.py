@@ -80,8 +80,8 @@ class Karuta():
         print(bcolors.OKBLUE + "Number of parts required: {}".format(num_parts))
         while True:
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
-            shuffle(self.part_ids)
-            self.part_ids = self.part_ids[:num_parts]
+            # shuffle(self.part_ids)
+            self.part_ids = self.part_ids[1:1+num_parts]
             for id in self.part_ids:
                 # save_path = 'audio/question_{}_{}.wav'.\
                 #                     format(self.question_id, id)
