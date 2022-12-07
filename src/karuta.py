@@ -75,13 +75,13 @@ class Karuta():
     
     def request_audio(self, save_audio_part=False, return_probs=True, num_parts=1):    
         new = False
-        all_probs = []
-        answers = []
         print(bcolors.OKBLUE + "Number of parts required: {}".format(num_parts))
         while True:
+            all_probs = []
+            answers = []
             self.part_ids = self.socket.get_info_audio_part(self.question_id, new=new)
             # shuffle(self.part_ids)
-            self.part_ids = self.part_ids[1:1+num_parts]
+            self.part_ids = self.part_ids[:num_parts]
             for id in self.part_ids:
                 # save_path = 'audio/question_{}_{}.wav'.\
                 #                     format(self.question_id, id)
@@ -98,12 +98,19 @@ class Karuta():
                 orders = np.argsort(prob_sum)[::-1][:self.num_cards+10]
                 if not os.path.exists('tmp'):
                     os.makedirs('tmp')
-                # self.predictors[0].plot_prob(prob_sum[orders], 
-                #                     self.labels[orders].tolist(), 'tmp/question_{}.png'.\
-                #                     format(self.question_id))
-            if len(self.part_ids) >= num_parts:
-                break
-            new = True
+                self.predictors[0].plot_prob(prob_sum[orders], 
+                                    self.labels[orders].tolist(), 'tmp/question_{}.png'.\
+                                    format(self.question_id))
+            q = input(bcolors.WARNING + 'Get new part? yes/no (y/n)')
+            if 'y' in q.lower():
+                new = True
+                num_parts += 1
+            else:
+                if len(self.part_ids) > 0:
+                    break
+                else:
+                    print("No data for predict, choose yes to get a new data")
+                    sys.exit(0)
             
         if return_probs:
             return np.mean(all_probs, axis=0), answers
