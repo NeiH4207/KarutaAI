@@ -23,7 +23,7 @@ class Predictor:
     def get_labels(self):
         return self.labels
 
-    def plot_prob(self, probs, labels, save_path=None):
+    def plot_prob(self, probs, labels, save_path=None, show=True):
         df = pd.DataFrame({'probability': probs, 'labels': labels})
         summited_columns = np.array([True] * len(labels))
         summited_columns[-10:] = False
@@ -35,7 +35,8 @@ class Predictor:
         plt.xticks(rotation='vertical')
         if save_path:
             plt.savefig(save_path)
-        plt.show()
+        if show:
+            plt.show()
         
     def predict(self, audio_file_path, plot=False, save_path=None, return_label=False):
         self.model.to(self.device)

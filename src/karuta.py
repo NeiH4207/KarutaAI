@@ -111,6 +111,10 @@ class Karuta():
                 else:
                     print("No data for predict, choose yes to get a new data")
                     sys.exit(0)
+        for i in range(len(self.part_ids)):
+            self.predictors[0].plot_prob(all_probs[i][orders], 
+                                self.labels[orders].tolist(), 'tmp/question_{}_{}.png'.\
+                                format(self.question_id, i))
             
         if return_probs:
             return np.mean(all_probs, axis=0), answers
