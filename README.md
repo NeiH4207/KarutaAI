@@ -1,5 +1,12 @@
 # KaturaAI
+This competition will be based on “Karuta” card game (see Wikipedia for the details of Karuta) on computers. In
+a regular Karuta game, the cards are read out loud one at a time, but in this competition, multiple cards will be
+read at the same time. The competitors will have to identify the cards using this superposed audio data. The cards
+that will be used are “Jomo Karuta1
 
+,” original local Karuta for the Gunma Prefecture. There are 44 cards each of
+the picture cards and reading cards. There is a Japanese version and English version to it, and we are using both
+for this competition.
 ### Folder tree
 
 ```
